@@ -1,0 +1,1 @@
+- [ ] The scripts mysteriously creates a `/home/appuser` folder on the host machine. We have to find out why and fix it.
