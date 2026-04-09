@@ -62,6 +62,9 @@ RUN pip install "ruamel.yaml==0.17.21" "requests==2.32.3" "tqdm==4.67.1" "plotex
 RUN git clone https://github.com/google/fuzzbench.git
 RUN cd fuzzbench && git checkout 6228338e8cfb654bb44b71402e05860a93d60ab1
 
+# Prevent the installation of the latest setuptools which is not compatible with some dependencies in fuzzbench
+RUN sed -i 's/upgrade pip setuptools/upgrade pip "setuptools<70.0.0"/g' fuzzbench/Makefile
+
 # I don't know why but the install-dependencies fails on aarch64
 RUN if [ $(uname -m) != "aarch64" ]; then make install-dependencies -C fuzzbench; fi
 
