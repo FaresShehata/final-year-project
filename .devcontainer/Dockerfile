@@ -57,7 +57,7 @@ SHELL ["conda", "run", "-n", "py310", "/bin/bash", "-c"]
 
 # Upgrade pip and install wheel within the virtual environment
 RUN pip install --upgrade "pip==25.1.1" "wheel==0.45.1"
-RUN pip install "ruamel.yaml==0.17.21" "requests==2.32.3" "tqdm==4.67.1" "plotext==5.3.2"
+RUN pip install "ruamel.yaml==0.17.21" "requests==2.32.3" "tqdm==4.67.1" "plotext==5.3.2" "github-copilot-sdk==0.1.25"
 
 RUN git clone https://github.com/google/fuzzbench.git
 RUN cd fuzzbench && git checkout 6228338e8cfb654bb44b71402e05860a93d60ab1
