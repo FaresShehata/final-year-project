@@ -65,6 +65,12 @@ Run the following command to synthesize fuzzers using ELFuzz or one of its varia
 elfuzz synth -T "fuzzer.(elfuzz|elfuzz_nofs|elfuzz_nocp|elfuzz_noin|elfuzz_nosp)" "<benchmark>"
 ```
 
+By default this uses the local Hugging Face/TGI backend. To use GitHub Copilot instead, add `--llm-backend copilot` and set your token with:
+
+```bash
+elfuzz config --set copilot.github_token "<your_token>"
+```
+
 where `<benchmark>` can be chosen from the seven benchmarks used in the paper, viz.,
 
 - `jsoncpp`

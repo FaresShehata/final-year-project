@@ -58,7 +58,8 @@ This tarball contains a Docker image to replicate all the experiments and figure
 
 This tarball contains the implementation of ELFuzz:
 
-- `genvariants_parallel.py` implements the LLM-driven mutation.
+- `llm_provider.py` contains the shared LLM backend abstraction for Hugging Face/TGI and GitHub Copilot.
+- `genvariants_parallel.py` implements the LLM-driven mutation using that backend abstraction.
 - `getcov.py`, `getcov_fuzzbench.py`, and `select_seeds.py` implements the fuzzer space exploration and max-cover selection. `getcov.py` and `getcov_fuzzbench.py` approximate the cover set of a fuzzer candidate, and `select_seeds.py` constructs the cover space and selects the max-cover survivors.
 
 Other files and directories are supportive components for the experiments. Some important ones are:

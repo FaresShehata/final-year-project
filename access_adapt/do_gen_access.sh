@@ -6,9 +6,14 @@ set -euo pipefail
 prev_gen="$1"
 next_gen="$2"
 num_gens=$(./elmconfig.py get run.num_generations)
+LLM_BACKEND="${ELMFUZZ_LLM_BACKEND:-huggingface}"
 
 # MODELS="codellama starcoder starcoder_diff"
-MODELS=$(./elmconfig.py get model.names)
+if [ "$LLM_BACKEND" = "copilot" ]; then
+    MODELS="${ELMFUZZ_COPILOT_MODEL:-gpt-4.1}"
+else
+    MODELS=$(./elmconfig.py get model.names)
+fi
 NUM_VARIANTS=$(./elmconfig.py get cli.genvariants_parallel.num_variants)
 LOGDIR=$(./elmconfig.py get run.logdir -s GEN=${next_gen})
 NUM_SELECTED=$(./elmconfig.py get run.num_selected)
@@ -101,7 +106,7 @@ for model_name in $MODELS ; do
     # Will have to add in model-specific args to the config and merge
     # in the starcoder_diff script
     python genvariants_parallel.py $VARIANT_ARGS \
-        -M "${model_name}" -O "$GVOUT" -L "$GVLOG" \
+        --backend "$LLM_BACKEND" -M "${model_name}" -O "$GVOUT" -L "$GVLOG" \
         "$ELMFUZZ_RUNDIR"/${next_gen}/seeds/*.py | \
         python genoutputs.py -L "${GOLOG}" -O "${GOOUT}" -g "${next_gen}"
     rm "$GOLOG"
