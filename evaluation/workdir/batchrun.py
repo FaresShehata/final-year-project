@@ -77,11 +77,21 @@ PRESETS = {
         'jsoncpp': ['-q', '30'],
         'libxml2': ['-q', '30'],
         're2': ['-q', '30'],
+    },
+    'elminputs': {
+        'cpython3': [],
+        'cvc5': ['-b', '1000'],
+        'librsvg': ['-b', '1000'],
+        'sqlite3': [],
+        'jsoncpp': [],
+        'libxml2': [],
+        're2': [],
     }
 }
 
 DIR_SUFFIX = {
     'elm': '',
+    'elminputs': '_inputs',
     'grmr': '_grammarinator',
     'isla': '_isla',
     'islearn': '_islearn',

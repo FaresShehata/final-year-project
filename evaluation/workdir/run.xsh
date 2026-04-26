@@ -63,7 +63,7 @@ def main(force, target, num, time_limit, batch_size, para_num, afl_dir, size_lim
 
     options = []
     match fuzzer:
-        case 'elm' | 'elmalt' | 'elmnocomp' | 'elmnospl' | 'elmnoinf' | 'zest':
+        case 'elm' | 'elmalt' | 'elmnocomp' | 'elmnospl' | 'elmnoinf' | 'elminputs' | 'zest':
             match fuzzer:
                 case 'elm':
                     target_dir = os.path.join(cwd, target)
@@ -75,11 +75,14 @@ def main(force, target, num, time_limit, batch_size, para_num, afl_dir, size_lim
                     target_dir = os.path.join(cwd, f'{target}_nospl')
                 case 'elmnoinf':
                     target_dir = os.path.join(cwd, f'{target}_noinf')
+                case 'elminputs':
+                    target_dir = os.path.join(cwd, f'{target}_inputs')
                 case 'zest':
                     target_dir = os.path.join(cwd, f'{target}_zest')
-            options += [
-                '-g', GENERATORS[target],
-            ]
+            if fuzzer != 'elminputs':
+                options += [
+                    '-g', GENERATORS[target],
+                ]
         case 'grmr':
             target_dir = os.path.join(cwd, f'{target}_grammarinator')
             options += [
@@ -90,7 +93,7 @@ def main(force, target, num, time_limit, batch_size, para_num, afl_dir, size_lim
         case 'islearn':
             target_dir = os.path.join(cwd, f'{target}_islearn')
             options += ['--use-semantics', 'true']
-    if fuzzer in ['isla', 'islearn', 'elm', 'elmalt', 'elmnospl', 'elmnoinf', 'elmnocomp'] and batch_timeout != -1:
+    if fuzzer in ['isla', 'islearn', 'elm', 'elmalt', 'elmnospl', 'elmnoinf', 'elmnocomp', 'elminputs'] and batch_timeout != -1:
         options += ['-q', str(batch_timeout)]
     options += ['-c', str(checkpoint)]
 
@@ -103,7 +106,7 @@ def main(force, target, num, time_limit, batch_size, para_num, afl_dir, size_lim
     options += ['-b', str(batch_size), '-j', str(para_num), '-a', afl_dir]
     if target in USE_CALLBACKS:
         options += ['-cb', 'callback']
-    if fuzzer in ['elm', 'elmalt']:
+    if fuzzer in ['elm', 'elmalt', 'elminputs']:
         options += ['-s', str(size_limit)]
     
     options + ['--stat-file', f'{target_dir}/stat.record']

@@ -12,6 +12,67 @@ from typing import Dict
 import select
 
 
+def _parse_endpoint_pairs(raw: str) -> dict[str, str]:
+    pairs: dict[str, str] = {}
+    for token in raw.strip().split():
+        if ":" not in token:
+            continue
+        name, endpoint = token.split(":", 1)
+        if name and endpoint:
+            pairs[name.strip()] = endpoint.strip()
+    return pairs
+
+
+def _get_model_endpoints_for_benchmark(benchmark: str) -> dict[str, str]:
+    env = os.environ.copy() | {"ELMFUZZ_RUNDIR": f"preset/{benchmark}"}
+    cmd = ["./elmconfig.py", "get", "model.endpoints"]
+    ret = subprocess.run(cmd, cwd=PROJECT_ROOT, env=env, capture_output=True, text=True)
+    if ret.returncode != 0:
+        return {}
+    return _parse_endpoint_pairs(ret.stdout)
+
+
+def _resolve_inputs_model(
+    *,
+    benchmark: str,
+    raw_model: str | None,
+    backend: str,
+) -> tuple[str | None, str | None]:
+    if raw_model is None:
+        return None, None
+
+    alias_to_id = {
+        "codellama": "codellama/CodeLlama-13b-hf",
+        "code-llama": "codellama/CodeLlama-13b-hf",
+        "qwen": "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "qwen2.5": "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "qwen2.5-coder": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    }
+
+    model_norm = raw_model.strip()
+    model_id = alias_to_id.get(model_norm.lower(), model_norm)
+
+    if backend != "huggingface":
+        return model_id, None
+
+    endpoints = _get_model_endpoints_for_benchmark(benchmark)
+    if not endpoints:
+        return model_id, None
+
+    # Exact key preferred.
+    if model_id in endpoints:
+        return model_id, endpoints[model_id]
+
+    # Alias/model fuzzy match for convenience (e.g., qwen -> Qwen/... key).
+    alias_key = model_norm.lower()
+    for key, endpoint in endpoints.items():
+        key_l = key.lower()
+        if alias_key in key_l or model_id.lower() in key_l:
+            return key, endpoint
+
+    return model_id, None
+
+
 def synthesize_semantics(benchmark, no_select: bool):
     click.echo(f"Preparing environments...")
     cmd_prepare_base = [
@@ -377,6 +438,9 @@ CONFIG_TEMPLATE = r"""
 |[evaluation.elm]
 |exclude = []
 |
+|[evaluation.elminputs]
+|exclude = []
+|
 |[evaluation.grmr]
 |exclude = []
 |
@@ -400,13 +464,19 @@ CONFIG_TEMPLATE = r"""
 """
 
 
-def produce(fuzzer, benchmark, *, debug=False, timelimit=600):
+def produce(fuzzer, benchmark, *, model: str | None = None, debug=False, timelimit=600):
+    fuzzer_name: str | None = None
+    dir_suffix: str | None = None
     info_tarball_suffix = ""
     match fuzzer:
         case "elfuzz":
             fuzzer_name = "elm"
             dir_suffix = ""
             info_tarball_suffix = "_elm"
+        case "elfuzz_inputs":
+            fuzzer_name = "elminputs"
+            dir_suffix = "_inputs"
+            info_tarball_suffix = "_elminputs"
         case "elfuzz_nofs":
             fuzzer_name = "elmalt"
             dir_suffix = "_alt"
@@ -428,8 +498,21 @@ def produce(fuzzer, benchmark, *, debug=False, timelimit=600):
         case "islearn":
             fuzzer_name = "islearn"
             dir_suffix = "_islearn"
+        case _:
+            raise ValueError(f"Unknown fuzzer: {fuzzer}")
+
+    assert fuzzer_name is not None and dir_suffix is not None
     if not info_tarball_suffix:
         info_tarball_suffix = dir_suffix
+
+    if fuzzer == "elfuzz_inputs":
+        required_meta = os.path.join(PROJECT_ROOT, "evaluation", "binary", benchmark, "meta.json")
+        if not os.path.exists(required_meta):
+            raise click.ClickException(
+                f"Missing benchmark artifacts: {required_meta}. "
+                "Please run `elfuzz download` (or mount/copy evaluation binaries in the container) before `elfuzz produce`."
+            )
+
     with tempfile.TemporaryDirectory() as tmpdir:
         config_str = trim_indent(CONFIG_TEMPLATE.format(fuzzer_name, benchmark), delimiter="\n")
         if debug:
@@ -445,10 +528,39 @@ def produce(fuzzer, benchmark, *, debug=False, timelimit=600):
             env = os.environ.copy() | {"TIME_LIMIT": str(timelimit)}
         else:
             env = os.environ.copy()
+
+        if fuzzer == "elfuzz_inputs" and model is not None:
+            backend = env.get("ELMFUZZ_LLM_BACKEND", "huggingface")
+            resolved_model, resolved_endpoint = _resolve_inputs_model(
+                benchmark=benchmark,
+                raw_model=model,
+                backend=backend,
+            )
+            if resolved_model is not None:
+                env |= {"ELMINPUTS_MODEL_ID": resolved_model, "ELMFUZZ_COPILOT_MODEL": resolved_model}
+            if backend == "huggingface" and resolved_endpoint is not None:
+                env |= {"ELMINPUTS_ENDPOINT": resolved_endpoint}
+            if (
+                backend == "huggingface"
+                and resolved_endpoint is None
+                and "ELMINPUTS_ENDPOINT" not in env
+                and "ELMFUZZ_TGI_ENDPOINT" not in env
+            ):
+                if "ELMFUZZ_LLM_BACKEND" not in os.environ:
+                    # Fall back to Copilot backend if no TGI endpoint is configured and the user didn't force a backend
+                    env["ELMFUZZ_LLM_BACKEND"] = "copilot"
+                else:
+                    endpoints = _get_model_endpoints_for_benchmark(benchmark)
+                    configured = ", ".join(sorted(endpoints.keys())) if endpoints else "<none>"
+                    raise click.ClickException(
+                        f"No TGI endpoint found for model '{resolved_model}'. "
+                        f"Configured endpoint keys for preset/{benchmark}: {configured}. "
+                        "Set ELMINPUTS_ENDPOINT (or ELMFUZZ_TGI_ENDPOINT), or add the model to model.endpoints."
+                    )
         subprocess.run(
             " ".join(cmd), check=True, env=env, cwd=WORKDIR, stdout=sys.stdout, shell=True, stderr=sys.stderr, user=USER
         )
-    if not (fuzzer.startswith("elfuzz") and fuzzer != "elfuzz"):
+    if not (fuzzer.startswith("elfuzz") and fuzzer not in ("elfuzz", "elfuzz_inputs")):
         click.echo("Generation done. Now we have to collect all the test cases to one place. This may take a while...")
         SEED_DIR = os.path.join(WORKDIR, f"{benchmark}{dir_suffix}", "out")
         with tempfile.TemporaryDirectory() as tmpdir:

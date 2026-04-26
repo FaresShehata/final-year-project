@@ -24,6 +24,7 @@ BINARIES = {
 
 FUZZERS = {
     "elfuzz": "elm",
+    "elfuzz_inputs": "elminputs",
     "grmr": "grmr",
     "isla": "isla",
     "islearn": "islearn",
@@ -63,6 +64,8 @@ def prepare(fuzzer, benchmark):
     match fuzzer:
         case "elfuzz":
             act_name = "elm"
+        case "elfuzz_inputs":
+            act_name = "elminputs"
         case "elfuzz_nofs":
             act_name = "elmalt"
         case "isla":
@@ -201,6 +204,8 @@ def rq1_seed_cov_showmap(fuzzer, benchmark) -> int:
     match fuzzer:
         case "elfuzz":
             subname = "elm"
+        case "elfuzz_inputs":
+            subname = "elminputs"
         case "elfuzz_nofs":
             subname = "alt"
         case _:

@@ -111,6 +111,7 @@ BENCHMARKS = [
 
 FUZZERS = [
     'elm',
+    'elminputs',
     'isla',
     'islearn',
     'alt',

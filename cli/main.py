@@ -343,7 +343,18 @@ def info():
     "-T",
     required=True,
     type=click.Choice(
-        ["elfuzz", "elfuzz_nofs", "elfuzz_nocp", "elfuzz_noin", "elfuzz_nosp", "isla", "islearn", "grmr", "glade"]
+        [
+            "elfuzz",
+            "elfuzz_inputs",
+            "elfuzz_nofs",
+            "elfuzz_nocp",
+            "elfuzz_noin",
+            "elfuzz_nosp",
+            "isla",
+            "islearn",
+            "grmr",
+            "glade",
+        ]
     ),
 )
 @click.argument(
@@ -353,25 +364,49 @@ def info():
 )
 @click.option("--time", "-t", type=int, default=600, show_default=True, help="The time to run the input generator.")
 @click.option("--debug", is_flag=True, default=False, hidden=True)
-def produce_command(fuzzer: str, benchmark: str, debug: bool, time: int):
+@click.option(
+    "--model",
+    "-M",
+    type=str,
+    default=None,
+    help=(
+        "Model for -T elfuzz_inputs only. Supports full model IDs or aliases like codellama / qwen "
+        "(for HuggingFace TGI) and Copilot model names."
+    ),
+)
+def produce_command(fuzzer: str, benchmark: str, model: str | None, debug: bool, time: int):
     match fuzzer, benchmark:
         case ("islearn", "jsoncpp") | ("islearn", "re2"):
             click.echo(f"Fuzzer {fuzzer} is not supported for benchmark {benchmark}.")
             return
+    if model is not None and fuzzer != "elfuzz_inputs":
+        raise click.BadParameter("--model/-M is only supported with -T elfuzz_inputs")
     match fuzzer:
         case "glade":
             produce_glade(benchmark, timelimit=time)
-        case "elfuzz" | "elfuzz_nofs" | "elfuzz_nocp" | "elfuzz_noin" | "elfuzz_nosp" | "isla" | "islearn" | "grmr":
-            produce(fuzzer, benchmark, debug=debug, timelimit=time)
+        case (
+            "elfuzz"
+            | "elfuzz_inputs"
+            | "elfuzz_nofs"
+            | "elfuzz_nocp"
+            | "elfuzz_noin"
+            | "elfuzz_nosp"
+            | "isla"
+            | "islearn"
+            | "grmr"
+        ):
+            produce(fuzzer, benchmark, model=model, debug=debug, timelimit=time)
         case _:
             click.echo(
-                f"Unknown fuzzer: {fuzzer}. Supported fuzzers are: elfuzz, elfuzz_nofs, elfuzz_nocp, elfuzz_noin, elfuzz_nosp, isla, islearn, grmr, glade."
+                f"Unknown fuzzer: {fuzzer}. Supported fuzzers are: elfuzz, elfuzz_inputs, elfuzz_nofs, elfuzz_nocp, elfuzz_noin, elfuzz_nosp, isla, islearn, grmr, glade."
             )
 
 
 @cli.command(name="minimize", help="Minimize test cases and (optionally) prepend random control bytes.")
 @click.option("--all", "-a", is_flag=True, default=False, help="Minimize all benchmark x fuzzer combinations.")
-@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "isla", "islearn", "grmr", "glade"]))
+@click.option(
+    "--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "elfuzz_inputs", "isla", "islearn", "grmr", "glade"])
+)
 @click.argument(
     "benchmark",
     required=False,
@@ -406,7 +441,9 @@ def run():
 """
     ),
 )
-@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "grmr", "glade", "isla", "islearn"]))
+@click.option(
+    "--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "elfuzz_inputs", "grmr", "glade", "isla", "islearn"])
+)
 @click.argument(
     "benchmark",
     required=True,
@@ -455,7 +492,7 @@ def rq1_afl(fuzzers, benchmarks, repeat, debug, time, parallel):
     fuzzer_list = [f.strip() for f in fuzzers.split(",")]
     benchmark_list = [b.strip() for b in benchmarks.split(",")]
     for fuzzer in fuzzer_list:
-        if fuzzer not in ["elfuzz", "grmr", "glade", "isla", "islearn"]:
+        if fuzzer not in ["elfuzz", "elfuzz_inputs", "grmr", "glade", "isla", "islearn"]:
             click.echo(f"Fuzzer {fuzzer} is not supported.")
             continue
         for benchmark in benchmark_list:
@@ -503,7 +540,7 @@ def rq2_afl(fuzzers, benchmarks, repeat, debug, time, parallel):
     fuzzer_list = []
     benchmark_list = []
     for fuzzer in fuzzer_list_raw:
-        if fuzzer not in ["elfuzz", "grmr", "glade", "isla", "islearn"]:
+        if fuzzer not in ["elfuzz", "elfuzz_inputs", "grmr", "glade", "isla", "islearn"]:
             click.echo(f"Fuzzer {fuzzer} is not supported.")
             continue
         fuzzer_list.append(fuzzer)

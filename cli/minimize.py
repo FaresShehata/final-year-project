@@ -29,6 +29,7 @@ ALL_BENCHMARKS = [
 def process(fuzzers, benchmarks, tmpdir):
     FUZZER_INV_MAPPING = {
         "elm": "elfuzz",
+        "elminputs": "elfuzz_inputs",
         "glade": "glade",
         "islearn": "islearn",
         "isla": "isla",
@@ -67,6 +68,7 @@ def process(fuzzers, benchmarks, tmpdir):
 def cmin(fuzzers, benchmarks, tmpdir):
     FUZZER_MAPPING = {
         "elfuzz": "elm",
+        "elfuzz_inputs": "elminputs",
         "glade": "glade",
         "islearn": "islearn",
         "isla": "isla",

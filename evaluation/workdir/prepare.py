@@ -51,6 +51,7 @@ ISLA_GRAMMAR = {
 ]))
 @clk.option('--fuzzer', '-z', default='elm', required=False, type=clk.Choice([
     'elm',
+    'elminputs',
     'grmr',
     'isla',
     'islearn',
@@ -65,6 +66,8 @@ def main(force, target, fuzzer):
     match fuzzer:
         case 'elm':
             subdir = os.path.join(work_root, target)
+        case 'elminputs':
+            subdir = os.path.join(work_root, f'{target}_inputs')
         case 'grmr':
             subdir = os.path.join(work_root, f'{target}_grammarinator')
         case 'isla':
@@ -123,6 +126,8 @@ def main(force, target, fuzzer):
     match fuzzer:
         case 'elm':
             fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'elmfuzz')
+        case 'elminputs':
+            fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'elminputs')
         case 'grmr':
             fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'grammarinator')
         case 'isla':
@@ -133,12 +138,22 @@ def main(force, target, fuzzer):
             fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'elmfuzz')
         case _:
             return NotImplemented()
+    cov_driver_dir = fuzz_driver_dir
+    extra_driver_dir = fuzz_driver_dir
+    if fuzzer == 'elminputs':
+        cov_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'elmfuzz')
+        extra_driver_dir = cov_driver_dir
+
     shutil.copy(os.path.join(fuzz_driver_dir, 'driver.py'), subdir)
-    shutil.copy(os.path.join(fuzz_driver_dir, 'cov_scripts', f'{target}.py'), os.path.join(subdir, 'get_cov.py'))
-    extra_scripts_dir = os.path.join(fuzz_driver_dir, 'extra', target)
+    shutil.copy(os.path.join(cov_driver_dir, 'cov_scripts', f'{target}.py'), os.path.join(subdir, 'get_cov.py'))
+    extra_scripts_dir = os.path.join(extra_driver_dir, 'extra', target)
     if os.path.exists(extra_scripts_dir):
         for f in os.listdir(extra_scripts_dir):
             shutil.copy(os.path.join(extra_scripts_dir, f), subdir)
+
+    if fuzzer == 'elminputs':
+        project_root = os.path.abspath(os.path.join(eval_root, '..'))
+        shutil.copy(os.path.join(project_root, 'llm_provider.py'), subdir)
 
     match fuzzer:
         case 'elm' | 'elmalt' | 'elmnoinf' | 'elmnocomp' | 'elmnospl':
