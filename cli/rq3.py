@@ -6,13 +6,14 @@ import tempfile
 import subprocess
 import shutil
 
+
 def rq3_input_cov_command(debug: bool):
     ablation_file = os.path.join(PROJECT_ROOT, "analysis", "rq3", "results", "rq3_ablation.xlsx")
     dataframe = pd.read_excel(ablation_file, header=0, index_col=0)
     for benchmark in BENCHMARKS:
         if debug and benchmark == "cvc5":
-            continue # It's too slow...
-        for fuzzer in ["elfuzz", "elfuzz_nofs", "elfuzz_nocp", "elfuzz_noin", "elfuzz_nosp"]:
+            continue  # It's too slow...
+        for fuzzer in ["elfuzz", "elfuzz_nofs", "elfuzz_nocp", "elfuzz_noin", "elfuzz_nosp", "elfuzz-gen"]:
             p = info_tarball_path(fuzzer, benchmark)
             if not os.path.exists(p):
                 print(f"Info tarball {p} not found. Use `rq1_seed_cov_cmd` to generate it.")
@@ -24,6 +25,7 @@ def rq3_input_cov_command(debug: bool):
     with pd.ExcelWriter(ablation_file) as writer:
         dataframe.to_excel(writer)
 
+
 def rq3_evolve_trend_command():
     with tempfile.TemporaryDirectory() as tmpdir:
         for benchmark in BENCHMARKS:
@@ -32,19 +34,19 @@ def rq3_evolve_trend_command():
                 ("nocomp", "elfuzz_noCompletion"),
                 ("noinf", "elfuzz_noInfilling"),
                 ("nospl", "elfuzz_noSpl"),
-                ("alt", "elfuzz_noFS")
+                ("alt", "elfuzz_noFS"),
             ]:
                 copy_to = os.path.join(tmpdir, alias, benchmark)
                 if not os.path.exists(copy_to):
                     os.makedirs(copy_to)
                 tarball_path = os.path.join(PROJECT_ROOT, "extradata", "evolution_record", fuzzer)
                 candidates = [f for f in os.listdir(tarball_path) if f.endswith(".tar.xz") and benchmark in f]
-                assert len(candidates) == 1, f"Expected exactly one tarball for {benchmark} in {tarball_path}, found: {candidates}"
+                assert (
+                    len(candidates) == 1
+                ), f"Expected exactly one tarball for {benchmark} in {tarball_path}, found: {candidates}"
                 tarball = os.path.join(tarball_path, candidates[0])
                 with tempfile.TemporaryDirectory() as tmpdir1:
-                    cmd_unpack = [
-                        "tar", "-xf", tarball, "-C", tmpdir1
-                    ]
+                    cmd_unpack = ["tar", "-xf", tarball, "-C", tmpdir1]
                     subprocess.run(cmd_unpack, check=True)
                     components = os.listdir(tmpdir1)
                     if len(components) == 1 and components[0] == "preset":
@@ -58,7 +60,5 @@ def rq3_evolve_trend_command():
                         p = os.path.join(copy_from, f)
                         shutil.move(p, copy_to)
         COLLECT_EVOLVE_COV_SCRIPT = os.path.join(PROJECT_ROOT, "analysis", "rq3", "collect_evolve_cov.py")
-        cmd = [
-            "python", COLLECT_EVOLVE_COV_SCRIPT, tmpdir
-        ]
+        cmd = ["python", COLLECT_EVOLVE_COV_SCRIPT, tmpdir]
         subprocess.run(cmd, check=True)

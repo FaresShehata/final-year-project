@@ -10,6 +10,56 @@ import tempfile
 import json
 from typing import Dict
 import select
+import threading
+from collections import deque
+from minimize import minimize_command
+
+
+def _drain_tgi_output(proc: subprocess.Popen, recent_lines: deque[str]) -> None:
+    if proc.stdout is None:
+        return
+    for line in proc.stdout:
+        text = line.strip()
+        if text:
+            recent_lines.append(text)
+
+
+def _start_tgi_server(cmd_tgi, env, tgi_waiting):
+    tgi_p = subprocess.Popen(
+        " ".join(cmd_tgi),
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=env,
+        cwd=PROJECT_ROOT,
+        user=USER,
+        text=True,
+    )
+    start = datetime.now()
+    print(f"TGI server started at {start}.", flush=True)
+    recent_lines = deque(maxlen=200)
+    poll_obj = select.poll()
+    assert tgi_p.stdout is not None, "TGI server stdout is None."
+    poll_obj.register(tgi_p.stdout, select.POLLIN)
+    while True:
+        if tgi_p.poll() is not None:
+            print("TGI server failed to start.", flush=True)
+            print("Recent TGI output:", flush=True)
+            for line in recent_lines:
+                print(line, flush=True)
+            raise RuntimeError("TGI server failed to start.")
+        if (datetime.now() - start).total_seconds() > tgi_waiting:
+            break
+        if poll_obj.poll(20):
+            line = tgi_p.stdout.readline().strip()
+            if line:
+                recent_lines.append(line)
+                print(line, flush=True)
+
+    # Keep draining output so the pipe buffer cannot fill during long runs.
+    drain_thread = threading.Thread(target=_drain_tgi_output, args=(tgi_p, recent_lines), daemon=True)
+    drain_thread.start()
+    return tgi_p
 
 
 def synthesize_semantics(benchmark, no_select: bool):
@@ -206,6 +256,27 @@ def synthesize_fuzzer(
             raise ValueError(f"Unknown target: {target}")
 
     tgi_p = None
+    override_config_path = None
+
+    if use_small_model:
+        override_config_path = os.path.join(
+            tempfile.gettempdir(), f"elfuzz_override_{datetime.now().strftime('%s')}.yaml"
+        )
+        with open(override_config_path, "w") as f:
+            f.write(
+                trim_indent(
+                    """
+                |model:
+                |  names:
+                |  - Qwen/Qwen2.5-Coder-1.5B
+                |  endpoints:
+                |  - Qwen/Qwen2.5-Coder-1.5B:http://host.docker.internal:8192
+            """,
+                    delimiter="\n",
+                )
+            )
+        env["ELMFUZZ_CONFIG"] = override_config_path
+
     if llm_backend == "huggingface":
         cmd_tgi = [
             "sudo",
@@ -216,35 +287,7 @@ def synthesize_fuzzer(
         )
 
         try:
-            tgi_p = subprocess.Popen(
-                " ".join(cmd_tgi),
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env=env,
-                cwd=PROJECT_ROOT,
-                user=USER,
-                text=True,
-            )
-            start = datetime.now()
-            print(f"TGI server started at {start}.", flush=True)
-            poll_obj = select.poll()
-            assert tgi_p.stdout is not None, "TGI server stdout is None."
-            poll_obj.register(tgi_p.stdout, select.POLLIN)
-            while True:
-                if tgi_p.poll() is not None:
-                    print("TGI server failed to start.", flush=True)
-                    print("stderr:", flush=True)
-                    print(tgi_p.stderr.read(), flush=True)  # type: ignore
-                    print("stdout:", flush=True)
-                    print(tgi_p.stdout.read(), flush=True)  # type: ignore
-                    raise RuntimeError("TGI server failed to start.")
-                if (datetime.now() - start).total_seconds() > tgi_waiting:
-                    break
-                if poll_obj.poll(20):
-                    line = tgi_p.stdout.readline().strip()
-                    if line:
-                        print(line, flush=True)
+            tgi_p = _start_tgi_server(cmd_tgi, env, tgi_waiting)
             click.echo("Text-generation-inference server started.")
         except Exception as e:
             raise e
@@ -258,6 +301,7 @@ def synthesize_fuzzer(
                 "env",
                 f"ELMFUZZ_LLM_BACKEND={llm_backend}",
                 "REPROUDCE_MODE=true",
+                f"ELMFUZZ_CONFIG={env.get('ELMFUZZ_CONFIG', '')}",
                 f"NUM_GENERATIONS={evolution_iterations}",
                 os.path.join(PROJECT_ROOT, "all_gen.sh"),
                 rundir,
@@ -268,6 +312,7 @@ def synthesize_fuzzer(
                 "env",
                 f"ELMFUZZ_LLM_BACKEND={llm_backend}",
                 "REPROUDCE_MODE=true",
+                f"ELMFUZZ_CONFIG={env.get('ELMFUZZ_CONFIG', '')}",
                 os.path.join(PROJECT_ROOT, "all_gen.sh"),
                 rundir,
             ]
@@ -335,6 +380,215 @@ def synthesize_fuzzer(
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+        if override_config_path and os.path.exists(override_config_path):
+            os.remove(override_config_path)
+
+
+def generate_inputs(
+    benchmark, *, tgi_waiting=600, evolution_iterations=50, use_small_model=False, llm_backend="huggingface"
+):
+    env = os.environ.copy() | {"SELECTION_STRATEGY": "lattice", "ELFUZZ_FORBIDDEN_MUTATORS": ""}
+
+    tgi_p = None
+    override_config_path = None
+
+    if use_small_model:
+        override_config_path = os.path.join(
+            tempfile.gettempdir(), f"elfuzz_override_{datetime.now().strftime('%s')}.yaml"
+        )
+        with open(override_config_path, "w") as f:
+            f.write(
+                trim_indent(
+                    """
+                |model:
+                |  names:
+                |  - Qwen/Qwen2.5-Coder-1.5B
+                |  endpoints:
+                |  - Qwen/Qwen2.5-Coder-1.5B:http://host.docker.internal:8192
+            """,
+                    delimiter="\n",
+                )
+            )
+        env["ELMFUZZ_CONFIG"] = override_config_path
+
+    if llm_backend == "huggingface":
+        cmd_tgi = [
+            "sudo",
+            os.path.join(PROJECT_ROOT, "start_tgi_servers.sh" if not use_small_model else "start_tgi_servers_debug.sh"),
+        ]
+        click.echo(
+            f"Starting the text-gneration-inference server. This may take a while as it has to download the model..."
+        )
+
+        try:
+            tgi_p = _start_tgi_server(cmd_tgi, env, tgi_waiting)
+            click.echo("Text-generation-inference server started.")
+        except Exception as e:
+            raise e
+
+    try:
+        rundir = os.path.join("preset", benchmark)
+
+        if evolution_iterations != 50:
+            cmd = [
+                "sudo",
+                "env",
+                f"ELMFUZZ_LLM_BACKEND={llm_backend}",
+                "REPROUDCE_MODE=true",
+                f"ELMFUZZ_CONFIG={env.get('ELMFUZZ_CONFIG', '')}",
+                f"NUM_GENERATIONS={evolution_iterations}",
+                os.path.join(PROJECT_ROOT, "all_gen_inputs.sh"),
+                rundir,
+            ]
+        else:
+            cmd = [
+                "sudo",
+                "env",
+                f"ELMFUZZ_LLM_BACKEND={llm_backend}",
+                "REPROUDCE_MODE=true",
+                f"ELMFUZZ_CONFIG={env.get('ELMFUZZ_CONFIG', '')}",
+                os.path.join(PROJECT_ROOT, "all_gen_inputs.sh"),
+                rundir,
+            ]
+        print(f"Running command: {' '.join(cmd)}", flush=True)
+        subprocess.run(
+            " ".join(cmd), check=True, shell=True, user=USER, cwd=PROJECT_ROOT, stdout=sys.stdout, stderr=sys.stderr
+        )
+
+        target_cap = "elfuzz"
+        fuzzer_dir = os.path.join(PROJECT_ROOT, "evaluation", "elmfuzzers_inputs")
+
+        evolution_record_dir = os.path.join(PROJECT_ROOT, "extradata", "evolution_record_inputs", target_cap)
+        if not os.path.exists(evolution_record_dir):
+            os.makedirs(evolution_record_dir)
+        else:
+            for file in os.listdir(evolution_record_dir):
+                os.remove(os.path.join(evolution_record_dir, file))
+        tar_evolution_cmd = ["tar", "-cJf", os.path.join(evolution_record_dir, "evolution.tar.xz"), rundir]
+        subprocess.run(tar_evolution_cmd, check=True, cwd=PROJECT_ROOT)
+
+        if not os.path.exists(fuzzer_dir):
+            os.makedirs(fuzzer_dir)
+        else:
+            for file in os.listdir(fuzzer_dir):
+                os.remove(os.path.join(fuzzer_dir, file))
+        datesuffix = datetime.now().strftime("%y%m%d")
+        with tempfile.TemporaryDirectory() as tmpdir_raw:
+            result_name = f"{benchmark}_{datesuffix}.fuzzers"
+            tmpdir = os.path.join(tmpdir_raw, result_name)
+            os.makedirs(tmpdir, exist_ok=True)
+            result_dir = os.path.join(PROJECT_ROOT, rundir, f"gen{evolution_iterations}", "seeds")
+            for file in os.listdir(result_dir):
+                if os.path.isdir(os.path.join(result_dir, file)):
+                    shutil.copytree(os.path.join(result_dir, file), os.path.join(tmpdir, file))
+                else:
+                    shutil.copy(os.path.join(result_dir, file), tmpdir)
+            tar_result_cmd = [
+                "tar",
+                "-cJf",
+                os.path.join(fuzzer_dir, f"{result_name}.tar.xz"),
+                "-C",
+                tmpdir_raw,
+                result_name,
+            ]
+            subprocess.run(tar_result_cmd, check=True, cwd=PROJECT_ROOT)
+
+        click.echo(f"Inputs generated for {benchmark}")
+    finally:
+        if tgi_p is not None:
+            subprocess.run(
+                ["sudo", "docker", "stop", "tgi-server"],
+                check=True,
+                cwd=PROJECT_ROOT,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        if override_config_path and os.path.exists(override_config_path):
+            os.remove(override_config_path)
+
+
+def gen_to_rq(benchmark, *, generation="gen50", skip_minimize=False, fuzzer_name="elfuzz-gen"):
+    """Package `preset/{benchmark}/{generation}/seeds/` into the raw seeds area and run minimize.
+
+    This function packages LLM-generated seeds into the same layout used by `produce`,
+    then calls the existing minimize pipeline. To avoid touching existing fuzzer dirs,
+    we temporarily place the tarball under the `elm` raw directory for processing and
+    then copy the minimized output into `cmined_with_control_bytes/{benchmark}/{fuzzer_name}`.
+    """
+    import tarfile
+    from datetime import datetime
+
+    project_root = PROJECT_ROOT
+    gen_seeds_dir = os.path.join(project_root, "preset", benchmark, generation, "seeds")
+    if not os.path.exists(gen_seeds_dir):
+        raise FileNotFoundError(f"Generation seeds directory not found: {gen_seeds_dir}")
+
+    # Collect files (flatten directories)
+    files = []
+    for entry in os.listdir(gen_seeds_dir):
+        p = os.path.join(gen_seeds_dir, entry)
+        if os.path.isdir(p):
+            for root, _, fnames in os.walk(p):
+                for fn in fnames:
+                    files.append(os.path.join(root, fn))
+        elif os.path.isfile(p):
+            files.append(p)
+
+    if not files:
+        raise RuntimeError(f"No seed files found in {gen_seeds_dir}")
+
+    datetag = datetime.now().strftime("%y%m%d")
+    raw_dir = os.path.join(project_root, "extradata", "seeds", "raw", benchmark, "elm")
+    os.makedirs(raw_dir, exist_ok=True)
+    # Create tar.zst in a temp dir
+    with tempfile.TemporaryDirectory() as tmpdir:
+        staged_dir = os.path.join(tmpdir, f"{benchmark}_elm")
+        os.makedirs(staged_dir, exist_ok=True)
+        # Copy files into staged_dir with unique names
+        for i, f in enumerate(files):
+            target = os.path.join(staged_dir, f"id_{i:06d}")
+            shutil.copy(f, target)
+
+        tarname = os.path.join(tmpdir, f"{datetag}.tar.zst")
+        # Create zstd tarball
+        cmd_tar = ["tar", "--zstd", "-cf", tarname, os.path.basename(staged_dir)]
+        subprocess.run(cmd_tar, check=True, cwd=tmpdir)
+
+        # Move tarball into raw_dir
+        dst_tar = os.path.join(raw_dir, os.path.basename(tarname))
+        shutil.move(tarname, dst_tar)
+
+        print(f"Staged gen seeds tarball at {dst_tar}")
+
+        if skip_minimize:
+            print("skip_minimize requested; packaging completed.")
+            return dst_tar
+
+        # Call minimize pipeline CLI function
+        # minimize_command(all=False, fuzzer='elfuzz', benchmark=benchmark)
+        print("Running minimize pipeline on staged tarball...")
+        minimize_command(all=False, fuzzer="elfuzz", benchmark=benchmark)
+
+        # After minimize, locate produced cmin tarball and copy to elfuzz-gen folder
+        cmin_dir = os.path.join(project_root, "extradata", "seeds", "cmined_with_control_bytes", benchmark, "elm")
+        if not os.path.exists(cmin_dir):
+            raise RuntimeError(f"Minimize did not produce expected output in {cmin_dir}")
+        candidates = [f for f in os.listdir(cmin_dir) if f.endswith(".tar.zst")]
+        if not candidates:
+            raise RuntimeError(f"No minimized tarballs found in {cmin_dir}")
+        candidates.sort(key=lambda f: int(f.removesuffix(".tar.zst")), reverse=True)
+        produced = candidates[0]
+        src_produced = os.path.join(cmin_dir, produced)
+
+        target_dir = os.path.join(
+            project_root, "extradata", "seeds", "cmined_with_control_bytes", benchmark, fuzzer_name
+        )
+        os.makedirs(target_dir, exist_ok=True)
+        dst_produced = os.path.join(target_dir, produced)
+        shutil.copy(src_produced, dst_produced)
+        print(f"Copied minimized corpus to {dst_produced}")
+
+        return dst_produced
 
 
 def produce_glade(benchmark, timelimit: int = 600):

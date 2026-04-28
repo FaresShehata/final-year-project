@@ -54,8 +54,20 @@ def main(generation: str, current_covfile, max_elites: int, input_elite_file, ou
     elite_filtering_record: dict[frozenset[str], tuple[str, int]] = dict()
     for descendant_key, descendant_edges_raw in coverage_modulo_model.items():
         descendant_edges = frozenset(descendant_edges_raw)
-        with open(f'{ELMFUZZ_RUNDIR}/{generation}/variants/{MODEL}/{descendant_key}.py', 'r') as f:
-            descendant_size = len(f.read())
+        descendant_path = f'{ELMFUZZ_RUNDIR}/{generation}/variants/{MODEL}/{descendant_key}.py'
+        if os.path.exists(descendant_path):
+            with open(descendant_path, 'r') as f:
+                descendant_size = len(f.read())
+        else:
+            descendant_path = f'{ELMFUZZ_RUNDIR}/{generation}/outputs/{MODEL}/{descendant_key}'
+            descendant_size = 0
+            if os.path.exists(descendant_path) and os.path.isdir(descendant_path):
+                for root, _, files in os.walk(descendant_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        if os.path.isfile(file_path):
+                            descendant_size += os.path.getsize(file_path)
+
         if descendant_edges in elite_filtering_record:
             record_key, record_size = elite_filtering_record[descendant_edges]
             if descendant_size < record_size:

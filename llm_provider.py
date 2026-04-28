@@ -53,6 +53,7 @@ def _trim_stop_sequences(text: str, stop: list[str] | None) -> tuple[str, str]:
 class HuggingFaceTGIProvider:
     endpoint: str
     model_id: str
+    request_timeout_s: float = 120.0
 
     def model_info(self) -> dict[str, str]:
         return {"model_id": self.model_id}
@@ -88,7 +89,18 @@ class HuggingFaceTGIProvider:
         }
         if stop is not None:
             data["parameters"]["stop"] = stop
-        return requests.post(f"{self.endpoint}/generate", json=data).json()
+        try:
+            return requests.post(
+                f"{self.endpoint}/generate",
+                json=data,
+                timeout=self.request_timeout_s,
+            ).json()
+        except requests.Timeout:
+            return {
+                "error": "timeout",
+                "timeout_seconds": self.request_timeout_s,
+                "details": {"finish_reason": "timeout"},
+            }
 
 
 @dataclass
@@ -284,9 +296,12 @@ def create_provider(
     model_id: str,
     endpoint: str | None = None,
     github_token: str | None = None,
+    request_timeout_s: float | None = None,
 ) -> LLMProvider:
     if backend == "copilot":
         return GitHubCopilotProvider(model_id=model_id, github_token=github_token)
     if endpoint is None:
         raise ValueError("Hugging Face backend requires an endpoint")
-    return HuggingFaceTGIProvider(endpoint=endpoint, model_id=model_id)
+    if request_timeout_s is None:
+        request_timeout_s = float(os.environ.get("ELMFUZZ_HF_TIMEOUT", "120"))
+    return HuggingFaceTGIProvider(endpoint=endpoint, model_id=model_id, request_timeout_s=request_timeout_s)

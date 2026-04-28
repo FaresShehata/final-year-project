@@ -9,8 +9,8 @@ import itertools
 
 ANALYSIS_ROOT = os.path.join(PROJECT_ROOT, "analysis", "rq1", "results")
 
-BINARY_ROOT = os.path.join(PROJECT_ROOT, "evaluation", 'binary')
-WORKDIR_ROOT = os.path.join(PROJECT_ROOT, "evaluation", 'workdir')
+BINARY_ROOT = os.path.join(PROJECT_ROOT, "evaluation", "binary")
+WORKDIR_ROOT = os.path.join(PROJECT_ROOT, "evaluation", "workdir")
 
 BINARIES = {
     "libxml2": os.path.join(BINARY_ROOT, "libxml2", "xml"),
@@ -19,7 +19,7 @@ BINARIES = {
     "cvc5": os.path.join(WORKDIR_ROOT, "cvc5", "cvc5"),
     "sqlite3": os.path.join(BINARY_ROOT, "sqlite3", "ossfuzz"),
     "librsvg": os.path.join(BINARY_ROOT, "librsvg", "render_document_patched"),
-    "jsoncpp": os.path.join(BINARY_ROOT, "jsoncpp", "jsoncpp_fuzzer")
+    "jsoncpp": os.path.join(BINARY_ROOT, "jsoncpp", "jsoncpp_fuzzer"),
 }
 
 FUZZERS = {
@@ -27,6 +27,7 @@ FUZZERS = {
     "grmr": "grmr",
     "isla": "isla",
     "islearn": "islearn",
+    "elfuzz-gen": "elfuzz-gen",
     "glade": "glade",
 }
 
@@ -34,30 +35,14 @@ ENV = {
     "libxml2": {},
     "re2": {},
     "sqlite3": {},
-    "cpython3": {
-        "AFL_MAP_SIZE": "2097152"
-    },
-    "cvc5": {
-        "AFL_MAP_SIZE": "2097152",
-        "LD_LIBRARY_PATH": os.path.join(WORKDIR_ROOT, "cvc5")
-    },
-    "librsvg": {
-        "AFL_MAP_SIZE": "2097152",
-        "AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES": "1",
-        "AFL_SKIP_CPUFREQ": "1"
-    },
-    "jsoncpp": {}
+    "cpython3": {"AFL_MAP_SIZE": "2097152"},
+    "cvc5": {"AFL_MAP_SIZE": "2097152", "LD_LIBRARY_PATH": os.path.join(WORKDIR_ROOT, "cvc5")},
+    "librsvg": {"AFL_MAP_SIZE": "2097152", "AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES": "1", "AFL_SKIP_CPUFREQ": "1"},
+    "jsoncpp": {},
 }
 
-BENCHMARKS = [
-    "libxml2",
-    "re2",
-    "cpython3",
-    "cvc5",
-    "sqlite3",
-    "librsvg",
-    "jsoncpp"
-]
+BENCHMARKS = ["libxml2", "re2", "cpython3", "cvc5", "sqlite3", "librsvg", "jsoncpp"]
+
 
 def prepare(fuzzer, benchmark):
     match fuzzer:
@@ -82,24 +67,25 @@ def prepare(fuzzer, benchmark):
         case _:
             raise ValueError(f"Unknown fuzzer: {fuzzer}")
     PREPARE_SCRIPT = os.path.join(PROJECT_ROOT, "evaluation", "workdir", "prepare.py")
-    cmd = [
-        "python", PREPARE_SCRIPT, "-f",
-        "-z", act_name,
-        benchmark
-    ]
+    cmd = ["python", PREPARE_SCRIPT, "-f", "-z", act_name, benchmark]
     subprocess.run(cmd, check=True)
+
 
 def run_afl_showmap(input_dir, output_dir, binary, env) -> tuple[str, int]:
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     cmd = [
         "/usr/bin/afl-showmap",
-        "-i", input_dir,
+        "-i",
+        input_dir,
         "-C",
-        "-o", os.path.join(output_dir, "cov"),
-        "-t", "5000",
+        "-o",
+        os.path.join(output_dir, "cov"),
+        "-t",
+        "5000",
         "--",
-        binary, "@@"
+        binary,
+        "@@",
     ]
 
     try:
@@ -109,21 +95,27 @@ def run_afl_showmap(input_dir, output_dir, binary, env) -> tuple[str, int]:
         print(f'Error: {" ".join(cmd)}\n{ret.returncode=}')
         sys.exit(1)
 
-    with open(os.path.join(output_dir, 'cov'), 'r') as cov_f:
-        cov_set = set([l.strip().split(':')[0] for l in cov_f.readlines() if l.strip()])
-        cov_str = '\n'.join(cov_set)
+    with open(os.path.join(output_dir, "cov"), "r") as cov_f:
+        cov_set = set([l.strip().split(":")[0] for l in cov_f.readlines() if l.strip()])
+        cov_str = "\n".join(cov_set)
         count = len(cov_set)
     return cov_str, count
+
 
 def run_afl_for_librsvg_showmap(input_dir, output_dir, binary, env):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     cmd = [
-        "cargo", "afl", "showmap",
-        "-i", input_dir,
+        "cargo",
+        "afl",
+        "showmap",
+        "-i",
+        input_dir,
         "-C",
-        "-o", os.path.join(output_dir, "cov"),
-        "-t", "5000",
+        "-o",
+        os.path.join(output_dir, "cov"),
+        "-t",
+        "5000",
         "--",
         binary,
     ]
@@ -138,6 +130,7 @@ def run_afl_for_librsvg_showmap(input_dir, output_dir, binary, env):
         count = len(cov_set)
         cov_str = "\n".join(cov_set)
     return cov_str, count
+
 
 def inside_tarball_path(fuzzer, benchmark):
     match fuzzer:
@@ -159,6 +152,7 @@ def inside_tarball_path(fuzzer, benchmark):
             dir_suffix = "_islearn"
     return f"{benchmark}{dir_suffix}"
 
+
 def info_tarball_path(fuzzer, benchmark):
     gen_info_dir = os.path.join(PROJECT_ROOT, "extradata", "rq3", "geninfo")
     info_tarball_suffix = ""
@@ -179,23 +173,21 @@ def info_tarball_path(fuzzer, benchmark):
             info_tarball_suffix = "_isla"
         case "islearn":
             info_tarball_suffix = "_islearn"
-    info_tarball = os.path.join(
-        gen_info_dir, f"{benchmark}{info_tarball_suffix}.tar.zst"
-    )
+    info_tarball = os.path.join(gen_info_dir, f"{benchmark}{info_tarball_suffix}.tar.zst")
     return info_tarball
+
 
 def rq1_seed_cov_cmd_info_tarball(fuzzer, benchmark) -> int:
     info_tarball = info_tarball_path(fuzzer, benchmark)
     inside_dir = inside_tarball_path(fuzzer, benchmark)
     cov_sum = f"{inside_dir}/sum.cov"
     with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = [
-            "tar", "--zstd", "-xf", info_tarball, "-C", tmpdir, cov_sum
-        ]
+        cmd = ["tar", "--zstd", "-xf", info_tarball, "-C", tmpdir, cov_sum]
         subprocess.run(cmd, check=True)
         with open(os.path.join(tmpdir, cov_sum), "r") as f:
             lines = f.readlines()
             return len(lines)
+
 
 def rq1_seed_cov_showmap(fuzzer, benchmark) -> int:
     match fuzzer:
@@ -206,9 +198,7 @@ def rq1_seed_cov_showmap(fuzzer, benchmark) -> int:
         case _:
             subname = fuzzer
     seed_dir = os.path.join(PROJECT_ROOT, "extradata", "seeds", "cmined_with_control_bytes", benchmark, subname)
-    candidates = [
-        f for f in os.listdir(seed_dir) if f.endswith(".tar.zst")
-    ]
+    candidates = [f for f in os.listdir(seed_dir) if f.endswith(".tar.zst")]
     candidates.sort(key=lambda f: int(f.removesuffix(".tar.zst")), reverse=True)
     assert len(candidates) > 0, f"No seeds found for {benchmark} with fuzzer {fuzzer}"
     seed_tarball = os.path.join(seed_dir, candidates[0])
@@ -216,9 +206,7 @@ def rq1_seed_cov_showmap(fuzzer, benchmark) -> int:
     prepare(fuzzer, benchmark)
     with tempfile.TemporaryDirectory() as tmpdir:
         os.mkdir(os.path.join(tmpdir, "input"))
-        cmd_unpack = [
-            "tar", "--zstd", "-xf", seed_tarball, "-C", os.path.join(tmpdir, "input")
-        ]
+        cmd_unpack = ["tar", "--zstd", "-xf", seed_tarball, "-C", os.path.join(tmpdir, "input")]
         subprocess.run(cmd_unpack, check=True)
         input_dir = os.path.join(tmpdir, "input", f"{benchmark}_{subname}")
         output_dir = os.path.join(tmpdir, "output")
@@ -227,9 +215,7 @@ def rq1_seed_cov_showmap(fuzzer, benchmark) -> int:
         binary = BINARIES[benchmark]
         env = ENV[benchmark]
         if benchmark == "librsvg":
-            _cov_str, count = run_afl_for_librsvg_showmap(
-                input_dir, output_dir, binary, env
-            )
+            _cov_str, count = run_afl_for_librsvg_showmap(input_dir, output_dir, binary, env)
         else:
             _cov_str, count = run_afl_showmap(input_dir, output_dir, binary, env)
         return count
@@ -250,6 +236,7 @@ def rq1_seed_cov_cmd(fuzzer, benchmark):
         df.to_excel(writer, sheet_name=benchmark, index=True, header=True)
     click.echo(f"Updated seed coverage for {benchmark} with fuzzer {fuzzer}: {cov} edges.")
 
+
 def rq1_afl_update(entries: list[tuple[str, str, int]]) -> None:
     with tempfile.TemporaryDirectory() as tmpdir_raw:
         tmpdir = os.path.join(tmpdir_raw, "afl_cov_exp")
@@ -260,9 +247,12 @@ def rq1_afl_update(entries: list[tuple[str, str, int]]) -> None:
             if not os.path.exists(untar_dir):
                 os.makedirs(untar_dir)
             cmd_untar = [
-                "tar", "--zstd", "-xf",
+                "tar",
+                "--zstd",
+                "-xf",
                 os.path.join(PROJECT_ROOT, "extradata", "rq1", "afl_results", f"{benchmark}_{fuzzer}_{rep}.tar.zst"),
-                "-C", untar_dir
+                "-C",
+                untar_dir,
             ]
             subprocess.run(cmd_untar, check=True)
             click.echo(f"Unpacked results for {benchmark} with fuzzer {fuzzer}, repetition {rep}.")
@@ -271,27 +261,22 @@ def rq1_afl_update(entries: list[tuple[str, str, int]]) -> None:
             all_reps.add(rep)
         SUM_REP_SCRIPT = os.path.join(PROJECT_ROOT, "analysis", "rq1", "sum_rep.py")
         for rep in all_reps:
-            cmd_sum_rep = [
-                "python", SUM_REP_SCRIPT,
-                tmpdir_raw,
-                "update"
-            ]
+            cmd_sum_rep = ["python", SUM_REP_SCRIPT, tmpdir_raw, "update"]
             subprocess.run(cmd_sum_rep, check=True)
             click.echo(f"Summarized results for repetition {rep} updated.")
         SUM_SCRIPT = os.path.join(PROJECT_ROOT, "analysis", "rq1", "sum.py")
-        cmd_sum = [
-            "python", SUM_SCRIPT, tmpdir_raw, "update"
-        ]
+        cmd_sum = ["python", SUM_SCRIPT, tmpdir_raw, "update"]
         subprocess.run(cmd_sum, check=True)
         click.echo("Summarized results across all repetitions updated.")
-        cmd_std = [
-            "python", os.path.join(PROJECT_ROOT, "analysis", "rq1", "std.py"), tmpdir, "update"
-        ]
+        cmd_std = ["python", os.path.join(PROJECT_ROOT, "analysis", "rq1", "std.py"), tmpdir, "update"]
         subprocess.run(cmd_std, check=True)
         click.echo("Standard deviation results updated.")
         click.echo("AFL++ analysis completed.")
 
-def rq1_afl_run(fuzzers, benchmarks, repeat: int, time: int, parallel: int, debug: bool=False) -> list[tuple[str, str, int]]:
+
+def rq1_afl_run(
+    fuzzers, benchmarks, repeat: int, time: int, parallel: int, debug: bool = False
+) -> list[tuple[str, str, int]]:
     to_exclude = [("re2", "islearn"), ("jsoncpp", "islearn")]
     included = list(itertools.product(benchmarks, fuzzers))
     for benchmark, (fuzzer, subname) in itertools.product(BENCHMARKS, FUZZERS.items()):
@@ -315,9 +300,7 @@ def rq1_afl_run(fuzzers, benchmarks, repeat: int, time: int, parallel: int, debu
                 case _:
                     subname = fuzzer
             seed_dir = os.path.join(PROJECT_ROOT, "extradata", "seeds", "cmined_with_control_bytes", benchmark, subname)
-            candidates = [
-                f for f in os.listdir(seed_dir) if f.endswith(".tar.zst")
-            ]
+            candidates = [f for f in os.listdir(seed_dir) if f.endswith(".tar.zst")]
             candidates.sort(key=lambda f: int(f.removesuffix(".tar.zst")), reverse=True)
             assert len(candidates) > 0, f"No seeds found for {benchmark} with fuzzer {fuzzer}"
             seed_tarball = os.path.join(seed_dir, candidates[0])
@@ -325,9 +308,7 @@ def rq1_afl_run(fuzzers, benchmarks, repeat: int, time: int, parallel: int, debu
             prepare(fuzzer, benchmark)
             if not os.path.exists(input_dir):
                 os.makedirs(input_dir)
-            cmd_unpack = [
-                "tar", "--zstd", "-xf", seed_tarball, "-C", input_dir
-            ]
+            cmd_unpack = ["tar", "--zstd", "-xf", seed_tarball, "-C", input_dir]
             subprocess.run(cmd_unpack, check=True)
         click.echo("Starting AFL++ campaigns...")
         output_dir = os.path.join(tmpdir, "output")
@@ -335,26 +316,38 @@ def rq1_afl_run(fuzzers, benchmarks, repeat: int, time: int, parallel: int, debu
             os.makedirs(output_dir)
         EXPERIMENT_SCRIPT = os.path.join(PROJECT_ROOT, "evaluation", "inputgen", "experiment.py")
         cmd = [
-            "python", EXPERIMENT_SCRIPT,
-            "-t", str(time),
-            "-i", input_dir,
-            "-o", output_dir + r"/%d/",
-            "-j", str(parallel),
-            "-r", str(repeat),
-            "-e", ",".join([f"{benchmark}_{fuzzer}" for benchmark, fuzzer in to_exclude])
+            "python",
+            EXPERIMENT_SCRIPT,
+            "-t",
+            str(time),
+            "-i",
+            input_dir,
+            "-o",
+            output_dir + r"/%d/",
+            "-j",
+            str(parallel),
+            "-r",
+            str(repeat),
+            "-e",
+            ",".join([f"{benchmark}_{fuzzer}" for benchmark, fuzzer in to_exclude]),
         ]
         subprocess.run(cmd, check=True)
         click.echo("AFL++ campaigns completed.")
         store_dir = os.path.join(PROJECT_ROOT, "extradata", "rq1", "afl_results")
         collected_info = []
-        for rep in range(1, 1+repeat):
+        for rep in range(1, 1 + repeat):
             for benchmark, fuzzer in included:
                 if (benchmark, fuzzer) in to_exclude:
                     continue
                 result_file = os.path.join(store_dir, f"{benchmark}_{fuzzer}_{rep}.tar.zst")
                 cmd_tar = [
-                    "tar", "--zstd", "-cf", result_file,
-                    "-C", os.path.join(output_dir, str(rep)), f"{benchmark}_{subname}"
+                    "tar",
+                    "--zstd",
+                    "-cf",
+                    result_file,
+                    "-C",
+                    os.path.join(output_dir, str(rep)),
+                    f"{benchmark}_{subname}",
                 ]
                 subprocess.run(cmd_tar, check=True)
                 collected_info.append(result_file)

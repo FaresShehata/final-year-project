@@ -14,12 +14,20 @@ from common import PROJECT_ROOT, USER, trim_indent
 
 sys.path.insert(0, PROJECT_ROOT)
 
-from pre_experiments import synthesize_fuzzer, synthesize_grammar, synthesize_semantics, produce, produce_glade
+from pre_experiments import (
+    synthesize_fuzzer,
+    synthesize_grammar,
+    synthesize_semantics,
+    produce,
+    produce_glade,
+    generate_inputs,
+)
 from minimize import minimize_command
 from rq1 import rq1_seed_cov_cmd, rq1_afl_run, rq1_afl_update
 from rq2 import rq2_afl_run, rq2_triage_command, rq2_real_world_cmd
 from rq3 import rq3_input_cov_command, rq3_evolve_trend_command
 from llm_provider import COPILOT_TOKEN_PATH, HUGGINGFACE_TOKEN_PATH
+from pre_experiments import generate_inputs, gen_to_rq
 
 
 def get_terminal_width():
@@ -179,6 +187,85 @@ def synthesize(
         case _:
             click.echo(f"Target {target} for `synth` hasn't been implemented yet.")
             return
+
+
+@cli.command(
+    name="gen",
+    help="Generate inputs using ELFuzz's new strategy (direct input generation via LLMs).",
+)
+@click.argument(
+    "benchmark",
+    required=True,
+    type=click.Choice(["jsoncpp", "libxml2", "re2", "librsvg", "cvc5", "sqlite3", "cpython3"]),
+)
+@click.option(
+    "--tgi-waiting",
+    "-w",
+    type=int,
+    default=DEFAULT_TGI_WAITING,
+    show_default=True,
+    help="Estimated time in seconds to wait for the text-generation-inference server to be ready.",
+)
+@click.option(
+    "--evolution-iterations",
+    "-n",
+    type=int,
+    default=50,
+    show_default=True,
+    help="Number of iterations for the LLM-driven evolution.",
+)
+@click.option(
+    "--use-small-model",
+    is_flag=True,
+    default=False,
+    help="Use Qwen2.5-Coder-1.5B instead of CodeLlama-13b-hf to verify the functionality on a GPU with limited VRAM.",
+)
+@click.option(
+    "--llm-backend",
+    type=click.Choice(["huggingface", "copilot"]),
+    default="huggingface",
+    show_default=True,
+    help="LLM backend to use for input generation.",
+)
+def generate(benchmark, tgi_waiting, evolution_iterations, use_small_model, llm_backend):
+    generate_inputs(
+        benchmark,
+        tgi_waiting=tgi_waiting,
+        evolution_iterations=evolution_iterations,
+        use_small_model=use_small_model,
+        llm_backend=llm_backend,
+    )
+    return
+
+
+@cli.command(
+    name="gen-to-rq",
+    help="Package `elfuzz gen` outputs for RQ experiments (minimize + package).",
+)
+@click.argument(
+    "benchmark",
+    required=True,
+    type=click.Choice(["jsoncpp", "libxml2", "re2", "librsvg", "cvc5", "sqlite3", "cpython3"]),
+)
+@click.option(
+    "--generation",
+    "generation",
+    default="gen50",
+    show_default=True,
+    help="Which generation folder to package (e.g. gen0, gen50).",
+)
+@click.option(
+    "--skip-minimize", is_flag=True, default=False, help="Only repackage gen outputs without running minimize."
+)
+@click.option(
+    "--fuzzer-name",
+    default="elfuzz-gen",
+    show_default=True,
+    help="Fuzzer name to use for RQ outputs (e.g. elfuzz-gen).",
+)
+def gen_to_rq_cmd(benchmark, generation, skip_minimize, fuzzer_name):
+    gen_to_rq(benchmark, generation=generation, skip_minimize=skip_minimize, fuzzer_name=fuzzer_name)
+    return
 
 
 @cli.command(name="config", help="Manage configuration.")
@@ -406,7 +493,9 @@ def run():
 """
     ),
 )
-@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "grmr", "glade", "isla", "islearn"]))
+@click.option(
+    "--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "grmr", "glade", "isla", "islearn", "elfuzz-gen"])
+)
 @click.argument(
     "benchmark",
     required=True,
