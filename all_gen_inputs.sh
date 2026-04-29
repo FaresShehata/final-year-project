@@ -16,7 +16,6 @@ fi
 # to find the config file ($ELMFUZZ_RUNDIR/config.yaml)
 export ELMFUZZ_RUNDIR="$1"
 export ELMFUZZ_RUN_NAME=$(basename "$ELMFUZZ_RUNDIR")
-seeds=$(./elmconfig.py get run.seeds)
 if [ -n "${NUM_GENERATIONS:-}" ]; then
     num_gens=${NUM_GENERATIONS}
 else
@@ -94,21 +93,11 @@ if [ $start_gen -eq -1 ]; then
     # Stamp dir tells us when a generation is fully finished
     # In the future this will let us resume a run
     mkdir -p "$ELMFUZZ_RUNDIR"/stamps
-    cp -r $seeds "$ELMFUZZ_RUNDIR"/initial/seeds/
-    
-    # Restructure seeds to be directories instead of files
-    for f in "$ELMFUZZ_RUNDIR"/initial/seeds/*; do
-        if [ -f "$f" ]; then
-            dir_name="${f%.*}"
-            mkdir -p "$dir_name"
-            mv "$f" "$dir_name/"
-        fi
-    done
-
-    # If there are generator modules in initial seed directories, run them to produce
-    # concrete seed files (e.g., .json for jsoncpp) before starting gen0.
-    if command -v python3 >/dev/null 2>&1 && [ -f "scripts/init_generate_seeds.py" ]; then
-        python3 scripts/init_generate_seeds.py "$ELMFUZZ_RUNDIR" || true
+    if command -v python3 >/dev/null 2>&1 && [ -f "scripts/init_generate_llm_seeds.py" ]; then
+        python3 scripts/init_generate_llm_seeds.py "$ELMFUZZ_RUNDIR"
+    else
+        echo "Missing scripts/init_generate_llm_seeds.py; cannot initialize seeds" >&2
+        exit 1
     fi
     ./do_gen_inputs.sh initial gen0
     for i in $(seq 0 $last_gen); do
