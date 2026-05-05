@@ -13,7 +13,8 @@ ALL_FUZZERS = [
     "islearn",
     'grmr',
     'glade',
-    'alt'
+    'alt',
+    'elfuzz_direct',
 ]
 
 ALL_BENCHMARKS = [
@@ -33,7 +34,8 @@ def process(fuzzers, benchmarks, tmpdir):
         "islearn": "islearn",
         "isla": "isla",
         "grmr": "grmr",
-        "alt": "elfuzz_nofs"
+        "alt": "elfuzz_nofs",
+        "elfuzz_direct": "elfuzz_direct",
     }
 
     exclude = []
@@ -71,6 +73,7 @@ def cmin(fuzzers, benchmarks, tmpdir):
         "islearn": "islearn",
         "isla": "isla",
         "grmr": "grmr",
+        "elfuzz_direct": "elfuzz_direct",
     }
 
     exclude = []

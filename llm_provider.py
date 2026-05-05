@@ -88,7 +88,7 @@ class HuggingFaceTGIProvider:
         }
         if stop is not None:
             data["parameters"]["stop"] = stop
-        return requests.post(f"{self.endpoint}/generate", json=data).json()
+        return requests.post(f"{self.endpoint}/generate", json=data, timeout=120).json()
 
 
 @dataclass

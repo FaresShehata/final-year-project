@@ -24,6 +24,7 @@ BINARIES = {
 
 FUZZERS = {
     "elfuzz": "elm",
+    "elfuzz_direct": "elfuzz_direct",
     "grmr": "grmr",
     "isla": "isla",
     "islearn": "islearn",
@@ -62,6 +63,10 @@ BENCHMARKS = [
 def prepare(fuzzer, benchmark):
     match fuzzer:
         case "elfuzz":
+            act_name = "elm"
+        case "elfuzz_direct":
+            # Direct mode uses the same target binary / workdir as elm — it
+            # only differs in how seeds are produced. Reuse elm's prepare step.
             act_name = "elm"
         case "elfuzz_nofs":
             act_name = "elmalt"
@@ -143,6 +148,8 @@ def inside_tarball_path(fuzzer, benchmark):
     match fuzzer:
         case "elfuzz":
             dir_suffix = ""
+        case "elfuzz_direct":
+            dir_suffix = "_direct"
         case "elfuzz_nofs":
             dir_suffix = "_alt"
         case "elfuzz_nocp":
@@ -165,6 +172,8 @@ def info_tarball_path(fuzzer, benchmark):
     match fuzzer:
         case "elfuzz":
             info_tarball_suffix = "_elm"
+        case "elfuzz_direct":
+            info_tarball_suffix = "_direct"
         case "elfuzz_nofs":
             info_tarball_suffix = "_alt"
         case "elfuzz_nocp":
@@ -201,6 +210,8 @@ def rq1_seed_cov_showmap(fuzzer, benchmark) -> int:
     match fuzzer:
         case "elfuzz":
             subname = "elm"
+        case "elfuzz_direct":
+            subname = "elfuzz_direct"
         case "elfuzz_nofs":
             subname = "alt"
         case _:
@@ -310,6 +321,8 @@ def rq1_afl_run(fuzzers, benchmarks, repeat: int, time: int, parallel: int, debu
             match fuzzer:
                 case "elfuzz":
                     subname = "elm"
+                case "elfuzz_direct":
+                    subname = "elfuzz_direct"
                 case "elfuzz_nofs":
                     subname = "alt"
                 case _:

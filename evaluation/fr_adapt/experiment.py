@@ -83,6 +83,7 @@ FUZZERS = [
     'isla',
     'islearn',
     "glade",
+    'elfuzz_direct',
 ]
 
 EXCLUDES = []
@@ -107,7 +108,7 @@ def main(time, input, output, prepare, resume, workdir, id, repeat, test_one, st
     for token in more_excludes.split(','):
         if not token:
             continue
-        benchmark, fuzzer = token.split('_')
+        benchmark, fuzzer = token.split('_', 1)
         if (benchmark, fuzzer) in EXCLUDES:
             continue
         EXCLUDES.append((benchmark, fuzzer))

@@ -115,7 +115,8 @@ FUZZERS = [
     'islearn',
     'alt',
     'grmr',
-    'glade'
+    'glade',
+    'elfuzz_direct',
 ]
 
 EXCLUDES = [('re2', 'islearn'), ('jsoncpp', 'islearn')]
@@ -133,7 +134,7 @@ def main(input_root, output_root, prepare, tarball_id, more_excludes):
     if more_excludes:
         more_excludes = more_excludes.split(',')
         for exclude in more_excludes:
-            benchmark, fuzzer = exclude.split('_')
+            benchmark, fuzzer = exclude.split('_', 1)
             EXCLUDES.append((benchmark, fuzzer))
     if prepare:
         logger.info('Prepare mode')

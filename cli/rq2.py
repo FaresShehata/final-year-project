@@ -133,6 +133,8 @@ def rq2_afl_run(fuzzers, benchmarks, repeat: int, time: int, parallel: int, debu
             match fuzzer:
                 case "elfuzz":
                     subname = "elm"
+                case "elfuzz_direct":
+                    subname = "elfuzz_direct"
                 case "elfuzz_nofs":
                     subname = "alt"
                 case _:
@@ -195,6 +197,8 @@ def rq2_real_world_cmd(resume: bool, output: str, time: int):
             match fuzzer:
                 case "elfuzz":
                     subname = "elm"
+                case "elfuzz_direct":
+                    subname = "elfuzz_direct"
                 case "elfuzz_nofs":
                     subname = "alt"
                 case _:

@@ -110,6 +110,7 @@ def run_afl(input_dir, output_dir, binary, env, time, dict_files=[]):
         '--',
         binary, '@@'
     ]
+    env = {**env, 'AFL_SKIP_CPUFREQ': '1'}
     #mailogger.log(f'Running {" ".join(cmd)}')
 
     try:
@@ -159,7 +160,8 @@ FUZZERS = [
     'grmr',
     'isla',
     'islearn',
-    'glade'
+    'glade',
+    'elfuzz_direct',
 ]
 
 EXCLUDES = [('re2', 'islearn'), ('jsoncpp', 'islearn')]
@@ -182,7 +184,7 @@ def main(time, input, output, prepare, id, seeds_mode, parallel, repeat_times, r
     for token in more_excludes.split(','):
         if not token.strip():
             continue
-        benchmark, fuzzer = token.strip().split('_')
+        benchmark, fuzzer = token.strip().split('_', 1)
         if (benchmark, fuzzer) not in EXCLUDES:
             EXCLUDES.append((benchmark, fuzzer))
     to_check = set()

@@ -31,7 +31,7 @@ BENCHMAKRS = [
 USE_PRCS=[('sqlite3', 'grmr'), ('re2', 'grmr'), ('cpython3', 'grmr'), ('jsoncpp', 'grmr'),
           ('libxml2', 'glade'), ('sqlite3', 'glade'), ('re2', 'glade'), ('cpython3', 'glade'), ('jsoncpp', 'glade')]
 
-FUZZERS = ['elm', 'alt', 'grmr', 'isla', 'islearn', 'glade']
+FUZZERS = ['elm', 'alt', 'grmr', 'isla', 'islearn', 'glade', 'elfuzz_direct']
 # FUZZERS = ['glade']
 
 EXCLUDE = [('re2', 'islearn'), ('jsoncpp', 'islearn')]
@@ -168,7 +168,7 @@ def main(shuffle, batch_size, id, input, output, iteration, first_run, move_inst
     if more_excludes:
         more_excludes = more_excludes.split(',')
         for exclude in more_excludes:
-            benchmark, fuzzer = exclude.split('_')
+            benchmark, fuzzer = exclude.split('_', 1)
             EXCLUDE.append((benchmark, fuzzer))
     for benchmark, fuzzer in itertools.product(BENCHMAKRS, FUZZERS):
         if (benchmark, fuzzer) in EXCLUDE:

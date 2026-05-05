@@ -15,6 +15,7 @@ from common import PROJECT_ROOT, USER, trim_indent
 sys.path.insert(0, PROJECT_ROOT)
 
 from pre_experiments import synthesize_fuzzer, synthesize_grammar, synthesize_semantics, produce, produce_glade
+from direct_mode import synthesize_direct
 from minimize import minimize_command
 from rq1 import rq1_seed_cov_cmd, rq1_afl_run, rq1_afl_update
 from rq2 import rq2_afl_run, rq2_triage_command, rq2_real_world_cmd
@@ -181,6 +182,54 @@ def synthesize(
             return
 
 
+@cli.command(
+    name="direct",
+    help="Synthesize test inputs directly using an LLM (no Python fuzzer programs in between).",
+)
+@click.argument(
+    "benchmark",
+    required=True,
+    type=click.Choice(["jsoncpp", "libxml2", "re2", "librsvg", "cvc5", "sqlite3", "cpython3"]),
+)
+@click.option(
+    "--tgi-waiting",
+    "-w",
+    type=int,
+    default=DEFAULT_TGI_WAITING,
+    show_default=True,
+    help="Estimated time in seconds to wait for the text-generation-inference server to be ready (huggingface backend only).",
+)
+@click.option(
+    "--evolution-iterations",
+    "-n",
+    type=int,
+    default=50,
+    show_default=True,
+    help="Number of iterations for the LLM-direct evolution.",
+)
+@click.option(
+    "--use-small-model",
+    is_flag=True,
+    default=False,
+    help="Use Qwen2.5-Coder-1.5B instead of CodeLlama-13b-hf (huggingface backend only).",
+)
+@click.option(
+    "--llm-backend",
+    type=click.Choice(["huggingface", "copilot"]),
+    default="huggingface",
+    show_default=True,
+    help="LLM backend to use for direct input synthesis.",
+)
+def direct(benchmark, tgi_waiting, evolution_iterations, use_small_model, llm_backend):
+    synthesize_direct(
+        benchmark,
+        tgi_waiting=tgi_waiting,
+        evolution_iterations=evolution_iterations,
+        use_small_model=use_small_model,
+        llm_backend=llm_backend,
+    )
+
+
 @cli.command(name="config", help="Manage configuration.")
 @click.option("list_", "--list", "-l", is_flag=True, help="List all configuration options.")
 @click.option("--set", "-s", type=(str, str), help="Set a configuration option.", default=None)
@@ -343,7 +392,7 @@ def info():
     "-T",
     required=True,
     type=click.Choice(
-        ["elfuzz", "elfuzz_nofs", "elfuzz_nocp", "elfuzz_noin", "elfuzz_nosp", "isla", "islearn", "grmr", "glade"]
+        ["elfuzz", "elfuzz_nofs", "elfuzz_nocp", "elfuzz_noin", "elfuzz_nosp", "elfuzz_direct", "isla", "islearn", "grmr", "glade"]
     ),
 )
 @click.argument(
@@ -361,17 +410,22 @@ def produce_command(fuzzer: str, benchmark: str, debug: bool, time: int):
     match fuzzer:
         case "glade":
             produce_glade(benchmark, timelimit=time)
+        case "elfuzz_direct":
+            click.echo(
+                "elfuzz_direct produces inputs directly during synthesis; the seed tarball is "
+                "already at extradata/seeds/raw/{benchmark}/elfuzz_direct/. `produce` is a no-op."
+            )
         case "elfuzz" | "elfuzz_nofs" | "elfuzz_nocp" | "elfuzz_noin" | "elfuzz_nosp" | "isla" | "islearn" | "grmr":
             produce(fuzzer, benchmark, debug=debug, timelimit=time)
         case _:
             click.echo(
-                f"Unknown fuzzer: {fuzzer}. Supported fuzzers are: elfuzz, elfuzz_nofs, elfuzz_nocp, elfuzz_noin, elfuzz_nosp, isla, islearn, grmr, glade."
+                f"Unknown fuzzer: {fuzzer}. Supported fuzzers are: elfuzz, elfuzz_nofs, elfuzz_nocp, elfuzz_noin, elfuzz_nosp, elfuzz_direct, isla, islearn, grmr, glade."
             )
 
 
 @cli.command(name="minimize", help="Minimize test cases and (optionally) prepend random control bytes.")
 @click.option("--all", "-a", is_flag=True, default=False, help="Minimize all benchmark x fuzzer combinations.")
-@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "isla", "islearn", "grmr", "glade"]))
+@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "elfuzz_direct", "isla", "islearn", "grmr", "glade"]))
 @click.argument(
     "benchmark",
     required=False,
@@ -406,7 +460,7 @@ def run():
 """
     ),
 )
-@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "grmr", "glade", "isla", "islearn"]))
+@click.option("--fuzzer", "-T", required=True, type=click.Choice(["elfuzz", "elfuzz_direct", "grmr", "glade", "isla", "islearn"]))
 @click.argument(
     "benchmark",
     required=True,
@@ -455,7 +509,7 @@ def rq1_afl(fuzzers, benchmarks, repeat, debug, time, parallel):
     fuzzer_list = [f.strip() for f in fuzzers.split(",")]
     benchmark_list = [b.strip() for b in benchmarks.split(",")]
     for fuzzer in fuzzer_list:
-        if fuzzer not in ["elfuzz", "grmr", "glade", "isla", "islearn"]:
+        if fuzzer not in ["elfuzz", "elfuzz_direct", "grmr", "glade", "isla", "islearn"]:
             click.echo(f"Fuzzer {fuzzer} is not supported.")
             continue
         for benchmark in benchmark_list:
@@ -503,7 +557,7 @@ def rq2_afl(fuzzers, benchmarks, repeat, debug, time, parallel):
     fuzzer_list = []
     benchmark_list = []
     for fuzzer in fuzzer_list_raw:
-        if fuzzer not in ["elfuzz", "grmr", "glade", "isla", "islearn"]:
+        if fuzzer not in ["elfuzz", "elfuzz_direct", "grmr", "glade", "isla", "islearn"]:
             click.echo(f"Fuzzer {fuzzer} is not supported.")
             continue
         fuzzer_list.append(fuzzer)
