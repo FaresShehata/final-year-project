@@ -278,10 +278,25 @@ def main():
     access_info = on_nsf_access()
     endpoint = None
     if args.backend == "huggingface":
-        try:
-            endpoint = args.model.endpoints[args.model_name] if access_info is None else access_info["endpoint"]
-        except KeyError:
-            print(f"WARNING: no endpoint for model {args.model_name}", file=sys.stderr)
+        if access_info is not None:
+            endpoint = access_info["endpoint"]
+        else:
+            endpoint = args.model.endpoints.get(args.model_name)
+            if endpoint is None:
+                # Model-override path (e.g. --use-small-model): the configured
+                # endpoint map doesn't include the override model. Fall back to
+                # the first configured endpoint — that's the TGI server we
+                # actually started.
+                first = next(iter(args.model.endpoints.values()), None)
+                if first is not None:
+                    print(
+                        f"INFO: no endpoint for model {args.model_name!r}; "
+                        f"falling back to first configured endpoint {first}",
+                        file=sys.stderr,
+                    )
+                    endpoint = first
+                else:
+                    print(f"WARNING: no endpoint for model {args.model_name}", file=sys.stderr)
 
     args.provider = create_provider(
         args.backend,

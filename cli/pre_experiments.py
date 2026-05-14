@@ -252,25 +252,24 @@ def synthesize_fuzzer(
     try:
         rundir = os.path.join("preset", benchmark)
 
+        cmd = [
+            "sudo",
+            "env",
+            f"ELMFUZZ_LLM_BACKEND={llm_backend}",
+            "REPROUDCE_MODE=true",
+        ]
         if evolution_iterations != 50:
-            cmd = [
-                "sudo",
-                "env",
-                f"ELMFUZZ_LLM_BACKEND={llm_backend}",
-                "REPROUDCE_MODE=true",
-                f"NUM_GENERATIONS={evolution_iterations}",
-                os.path.join(PROJECT_ROOT, "all_gen.sh"),
-                rundir,
-            ]
-        else:
-            cmd = [
-                "sudo",
-                "env",
-                f"ELMFUZZ_LLM_BACKEND={llm_backend}",
-                "REPROUDCE_MODE=true",
-                os.path.join(PROJECT_ROOT, "all_gen.sh"),
-                rundir,
-            ]
+            cmd.append(f"NUM_GENERATIONS={evolution_iterations}")
+        if use_small_model and llm_backend == "huggingface":
+            # Match the model TGI is actually serving (start_tgi_servers_debug.sh
+            # serves Qwen/Qwen2.5-Coder-1.5B). Without this, do_gen.sh would
+            # resolve the model name from elmconfig (CodeLlama-13b-hf), and
+            # genvariants_parallel.py would use the wrong FIM tokens.
+            cmd.append("ELFUZZ_HF_MODEL_OVERRIDE=Qwen/Qwen2.5-Coder-1.5B")
+        cmd += [
+            os.path.join(PROJECT_ROOT, "all_gen.sh"),
+            rundir,
+        ]
         print(f"Running command: {' '.join(cmd)}", flush=True)
         subprocess.run(
             " ".join(cmd), check=True, shell=True, user=USER, cwd=PROJECT_ROOT, stdout=sys.stdout, stderr=sys.stderr

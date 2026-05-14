@@ -12,7 +12,12 @@ LLM_BACKEND="${ELMFUZZ_LLM_BACKEND:-huggingface}"
 if [ "$LLM_BACKEND" = "copilot" ]; then
     MODELS="${ELMFUZZ_COPILOT_MODEL:-gpt-4.1}"
 else
-    MODELS=$(./elmconfig.py get model.names)
+    MODELS="${ELFUZZ_HF_MODEL_OVERRIDE:-$(./elmconfig.py get model.names)}"
+    # select_seeds.py keys coverage.json by the basename of the model name
+    # (getcov.py uses os.path.basename of the variants subdir). When we
+    # override the model, propagate the same name so selection finds the
+    # variants.
+    export ELFUZZ_SELECT_MODEL_NAME="$MODELS"
 fi
 NUM_VARIANTS=$(./elmconfig.py get cli.genvariants_parallel.num_variants)
 LOGDIR=$(./elmconfig.py get run.logdir -s GEN=${next_gen})

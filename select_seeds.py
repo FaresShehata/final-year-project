@@ -6,7 +6,10 @@ from typing import Union, Literal, Optional
 import random
 from tqdm import tqdm
 
-MODEL = 'CodeLlama-13b-hf'
+# Override via env var when an alt model is in use (e.g. --use-small-model
+# serves Qwen). Strip any org prefix to match getcov.py, which uses
+# os.path.basename() of the variants subdir as the dict key.
+MODEL = os.environ.get('ELFUZZ_SELECT_MODEL_NAME', 'CodeLlama-13b-hf').split('/')[-1]
 
 def superior_than(edge_coverage1: set[str], edge_coverage2: set[str]) -> bool:
     return len(edge_coverage1) > len(edge_coverage2) and ((not edge_coverage2) or edge_coverage2.issubset(edge_coverage1))
