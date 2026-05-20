@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the initial seed corpus for `elfuzz direct` mode using an LLM.
+"""Generate the initial flat input population for `elfuzz direct` mode.
 
-Writes ``rundir/initial/seeds/coll_NNNN/input_NNNN.<ext>``.
+Writes ``<output_dir>/input_NNNNNNNN.<ext>`` (no collection nesting).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from direct_common import (
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--rundir", required=True)
+    p.add_argument("--output-dir", required=True)
     p.add_argument("--backend", choices=["huggingface", "copilot"], required=True)
     p.add_argument("-M", "--model", required=True, help="Model name/id passed to LLMProvider")
     p.add_argument(
@@ -30,8 +30,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Endpoint URL (HuggingFace TGI backend); ignored for Copilot",
     )
-    p.add_argument("--num-collections", type=int, required=True)
-    p.add_argument("--inputs-per-collection", type=int, required=True)
+    p.add_argument("--num-initial-inputs", type=int, required=True)
     p.add_argument("--input-extension", required=True)
     p.add_argument("--format-name", required=True)
     p.add_argument("--format-description", required=True)
@@ -73,14 +72,12 @@ def generate_one(
     text = res.get("generated_text", "") or ""
     if backend == "copilot":
         return postprocess_copilot(text)
-    # HF: model just continues the bare prefix; reconstruct full input.
     return hf_initial_prefix + text
 
 
 def main() -> int:
     args = parse_args()
-    initial_seeds = os.path.join(args.rundir, "initial", "seeds")
-    os.makedirs(initial_seeds, exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True)
 
     provider = create_provider(
         args.backend,
@@ -88,16 +85,9 @@ def main() -> int:
         endpoint=args.endpoint,
     )
 
-    plan: list[tuple[int, int]] = []
-    for ci in range(args.num_collections):
-        coll_dir = os.path.join(initial_seeds, f"coll_{ci:04d}")
-        os.makedirs(coll_dir, exist_ok=True)
-        for ii in range(args.inputs_per_collection):
-            plan.append((ci, ii))
-
+    n = args.num_initial_inputs
     print(
-        f"[direct_initial] generating {len(plan)} inputs "
-        f"({args.num_collections} collections x {args.inputs_per_collection})",
+        f"[direct_initial] generating {n} initial inputs into {args.output_dir}",
         file=sys.stderr,
         flush=True,
     )
@@ -105,7 +95,7 @@ def main() -> int:
     failures = 0
     with ThreadPoolExecutor(max_workers=args.jobs) as ex:
         futs = {}
-        for (ci, ii) in plan:
+        for i in range(n):
             fut = ex.submit(
                 generate_one,
                 provider,
@@ -116,24 +106,27 @@ def main() -> int:
                 args.temperature,
                 args.max_new_tokens,
             )
-            futs[fut] = (ci, ii)
+            futs[fut] = i
         for fut in as_completed(futs):
-            ci, ii = futs[fut]
+            i = futs[fut]
             out_path = os.path.join(
-                initial_seeds, f"coll_{ci:04d}", f"input_{ii:04d}{args.input_extension}"
+                args.output_dir, f"input_{i:08d}{args.input_extension}"
             )
             try:
                 content = fut.result()
             except Exception as exc:
                 failures += 1
-                print(f"[direct_initial] LLM call failed for coll_{ci:04d}/input_{ii:04d}: {exc}", file=sys.stderr)
+                print(
+                    f"[direct_initial] LLM call failed for input_{i:08d}: {exc}",
+                    file=sys.stderr,
+                )
                 content = ""
             with open(out_path, "w", encoding="utf-8", errors="replace") as f:
                 f.write(content)
 
     if failures:
         print(f"[direct_initial] WARNING: {failures} LLM calls failed", file=sys.stderr)
-    print(f"[direct_initial] wrote initial corpus to {initial_seeds}", file=sys.stderr)
+    print(f"[direct_initial] wrote {n} inputs to {args.output_dir}", file=sys.stderr)
     return 0
 
 

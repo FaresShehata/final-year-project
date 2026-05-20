@@ -1,10 +1,10 @@
 """LLM-direct input synthesis ("elfuzz direct" command).
 
 This is a sibling to `synthesize_fuzzer` in pre_experiments.py, but instead of
-evolving Python fuzzer programs the LLM produces inputs directly. The unit of
-selection is a *collection* of inputs (a directory); coverage is the union over
-all inputs in the collection; selection uses the same Pareto-by-superset rule
-as `select_seeds.py`.
+evolving Python fuzzer programs the LLM produces inputs directly. A single
+growing pool of inputs is evolved: each candidate is judged on its own
+coverage and either added, used to replace a strictly inferior pool input
+(Pareto-by-superset), or discarded.
 """
 
 import os
@@ -66,9 +66,8 @@ DIRECT_FORMAT_METADATA = {
     },
 }
 
-DEFAULT_INPUTS_PER_COLLECTION = 50
-DEFAULT_NUM_INITIAL_COLLECTIONS = 20
-DEFAULT_NUM_VARIANTS = 20
+DEFAULT_NUM_INITIAL_INPUTS = 1000
+DEFAULT_NUM_CANDIDATES_PER_GEN = 1000
 
 OUTPUT_FUZZER_NAME = "elfuzz_direct"
 
@@ -90,9 +89,8 @@ def synthesize_direct(
         "ELFUZZ_DIRECT_FORMAT_DESCRIPTION": fmt["format_description"],
         "ELFUZZ_DIRECT_INPUT_EXTENSION": fmt["input_extension"],
         "ELFUZZ_DIRECT_HF_INITIAL_PREFIX": fmt["hf_initial_prefix"],
-        "ELFUZZ_DIRECT_INPUTS_PER_COLLECTION": str(DEFAULT_INPUTS_PER_COLLECTION),
-        "ELFUZZ_DIRECT_NUM_INITIAL_COLLECTIONS": str(DEFAULT_NUM_INITIAL_COLLECTIONS),
-        "ELFUZZ_DIRECT_NUM_VARIANTS": str(DEFAULT_NUM_VARIANTS),
+        "ELFUZZ_DIRECT_NUM_INITIAL_INPUTS": str(DEFAULT_NUM_INITIAL_INPUTS),
+        "ELFUZZ_DIRECT_NUM_CANDIDATES_PER_GEN": str(DEFAULT_NUM_CANDIDATES_PER_GEN),
         # Reuse the same selection knob as synth's lattice mode:
         "SELECTION_STRATEGY": "lattice",
         "ELFUZZ_FORBIDDEN_MUTATORS": "",
@@ -169,9 +167,8 @@ def synthesize_direct(
             f"ELFUZZ_DIRECT_FORMAT_DESCRIPTION={fmt['format_description']}",
             f"ELFUZZ_DIRECT_INPUT_EXTENSION={fmt['input_extension']}",
             f"ELFUZZ_DIRECT_HF_INITIAL_PREFIX={fmt['hf_initial_prefix']}",
-            f"ELFUZZ_DIRECT_INPUTS_PER_COLLECTION={DEFAULT_INPUTS_PER_COLLECTION}",
-            f"ELFUZZ_DIRECT_NUM_INITIAL_COLLECTIONS={DEFAULT_NUM_INITIAL_COLLECTIONS}",
-            f"ELFUZZ_DIRECT_NUM_VARIANTS={DEFAULT_NUM_VARIANTS}",
+            f"ELFUZZ_DIRECT_NUM_INITIAL_INPUTS={DEFAULT_NUM_INITIAL_INPUTS}",
+            f"ELFUZZ_DIRECT_NUM_CANDIDATES_PER_GEN={DEFAULT_NUM_CANDIDATES_PER_GEN}",
         ]
         if use_small_model and llm_backend == "huggingface":
             run_cmd.append("ELFUZZ_DIRECT_HF_MODEL_OVERRIDE=Qwen/Qwen2.5-Coder-1.5B")
@@ -206,13 +203,12 @@ def synthesize_direct(
 
 
 def _package_outputs(benchmark, rundir, evolution_iterations, fmt):
-    """Bundle the final-gen elite collections into the seed-tarball path used by
+    """Bundle the final pool of inputs into the seed-tarball path used by
     `elfuzz produce` so that downstream rq commands can consume them.
     """
-    last_gen = f"gen{evolution_iterations}"
-    final_dir = os.path.join(PROJECT_ROOT, rundir, last_gen, "seeds")
-    if not os.path.isdir(final_dir):
-        click.echo(f"WARNING: expected final seeds dir {final_dir} not found", err=True)
+    pool_inputs = os.path.join(PROJECT_ROOT, rundir, "pool", "inputs")
+    if not os.path.isdir(pool_inputs):
+        click.echo(f"WARNING: expected pool inputs dir {pool_inputs} not found", err=True)
         return
 
     datesuffix = datetime.now().strftime("%y%m%d")
@@ -225,16 +221,12 @@ def _package_outputs(benchmark, rundir, evolution_iterations, fmt):
     with tempfile.TemporaryDirectory() as tmpdir_raw:
         flat_dir = os.path.join(tmpdir_raw, inside_name, "seeds")
         os.makedirs(flat_dir, exist_ok=True)
-        for collection_name in os.listdir(final_dir):
-            coll_path = os.path.join(final_dir, collection_name)
-            if not os.path.isdir(coll_path):
+        for input_file in os.listdir(pool_inputs):
+            src = os.path.join(pool_inputs, input_file)
+            if not os.path.isfile(src):
                 continue
-            for input_file in os.listdir(coll_path):
-                src = os.path.join(coll_path, input_file)
-                if not os.path.isfile(src):
-                    continue
-                dst = os.path.join(flat_dir, f"{collection_name}__{input_file}")
-                shutil.copy(src, dst)
+            dst = os.path.join(flat_dir, input_file)
+            shutil.copy(src, dst)
         seed_tar = os.path.join(raw_dir, f"{datesuffix}.tar.zst")
         subprocess.run(
             ["tar", "--zstd", "-cf", seed_tar, "-C", tmpdir_raw, inside_name],

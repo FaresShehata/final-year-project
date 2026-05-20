@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Mutate parent collections of inputs into new variant collections via the LLM.
+"""Mutate inputs from a single pool into candidate inputs via the LLM.
 
-Replaces the `genvariants_parallel.py + genoutputs.py` pipeline for direct mode.
-Each variant is a *directory* of M inputs produced by repeatedly applying one
-mutation operator to the parent's inputs.
+Picks one (or two, for ``lmsplice``) inputs at random from the pool, applies
+one random allowed mutation operator per call, and writes each candidate into
+its own per-candidate directory so the existing per-generator coverage tooling
+(see ``getcov.py`` / ``getcov_fuzzbench.py``) treats each candidate as an
+independent unit:
+
+    <output_dir>/cand_NNNNNNNN/input_NNNNNNNN<ext>
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import random
 import sys
@@ -32,14 +35,13 @@ ALL_OPS = ("complete", "infilled", "lmsplice")
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("seed_paths", nargs="+", help="Parent collection directories")
+    p.add_argument("--pool-dir", required=True,
+                   help="Flat directory containing the current pool inputs")
     p.add_argument("--backend", choices=["huggingface", "copilot"], required=True)
     p.add_argument("-M", "--model", required=True)
     p.add_argument("-E", "--endpoint", default=None)
     p.add_argument("--output-dir", required=True)
-    p.add_argument("--log-dir", required=True)
-    p.add_argument("-n", "--num-variants", type=int, required=True)
-    p.add_argument("--inputs-per-collection", type=int, required=True)
+    p.add_argument("-n", "--num-candidates", type=int, required=True)
     p.add_argument("--input-extension", required=True)
     p.add_argument("--format-name", required=True)
     p.add_argument("--format-description", required=True)
@@ -49,11 +51,11 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def list_collection_inputs(collection_dir: str) -> list[str]:
+def list_pool_inputs(pool_dir: str) -> list[str]:
     return sorted(
-        os.path.join(collection_dir, f)
-        for f in os.listdir(collection_dir)
-        if os.path.isfile(os.path.join(collection_dir, f))
+        os.path.join(pool_dir, f)
+        for f in os.listdir(pool_dir)
+        if os.path.isfile(os.path.join(pool_dir, f))
     )
 
 
@@ -66,24 +68,24 @@ def make_one_input(
     provider,
     backend: str,
     op: str,
-    parent_inputs: list[str],
+    pool_inputs: list[str],
     fmt_name: str,
     fmt_desc: str,
     temperature: float,
     max_new_tokens: int,
 ) -> str:
     if op == "complete":
-        text = read_text(random.choice(parent_inputs))
+        text = read_text(random.choice(pool_inputs))
         prefix = random_complete_cut(text)
         suffix = ""
     elif op == "infilled":
-        text = read_text(random.choice(parent_inputs))
+        text = read_text(random.choice(pool_inputs))
         prefix, suffix = random_fim_cut(text)
     elif op == "lmsplice":
-        if len(parent_inputs) >= 2:
-            a, b = random.sample(parent_inputs, 2)
+        if len(pool_inputs) >= 2:
+            a, b = random.sample(pool_inputs, 2)
         else:
-            a = b = parent_inputs[0]
+            a = b = pool_inputs[0]
         prefix, suffix = random_splice_cuts(read_text(a), read_text(b))
     else:
         raise ValueError(f"unknown op {op!r}")
@@ -120,8 +122,6 @@ def main() -> int:
     args = parse_args()
     forbidden_raw = os.environ.get("ELFUZZ_FORBIDDEN_MUTATORS", "").strip()
     forbidden = {f.strip() for f in forbidden_raw.split(",") if f.strip()}
-    # accept both the synth-canonical names ("infilling", "lmsplicing") and
-    # the names actually used in this module.
     forbidden_aliases = {
         "infilling": "infilled",
         "lmsplicing": "lmsplice",
@@ -133,13 +133,13 @@ def main() -> int:
         print("[direct_mutate] ERROR: all mutation operators forbidden", file=sys.stderr)
         return 1
 
-    seed_paths = [p for p in args.seed_paths if os.path.isdir(p)]
-    if not seed_paths:
-        print("[direct_mutate] ERROR: no valid seed (parent) collection directories", file=sys.stderr)
+    pool_inputs = list_pool_inputs(args.pool_dir)
+    if not pool_inputs:
+        print(f"[direct_mutate] ERROR: pool dir is empty: {args.pool_dir}",
+              file=sys.stderr)
         return 1
 
     os.makedirs(args.output_dir, exist_ok=True)
-    os.makedirs(args.log_dir, exist_ok=True)
 
     provider = create_provider(
         args.backend,
@@ -147,70 +147,50 @@ def main() -> int:
         endpoint=args.endpoint,
     )
 
-    # Plan: one (var_idx, op, parent, input_idx) tuple per LLM call.
-    plan: list[tuple[int, str, str, int]] = []
-    variant_meta: dict[int, dict] = {}
-    for var_idx in range(args.num_variants):
-        parent = random.choice(seed_paths)
+    plan: list[tuple[int, str]] = []
+    for ci in range(args.num_candidates):
         op = random.choice(allowed)
-        out_dir = os.path.join(args.output_dir, f"var_{var_idx:04d}.{op}")
-        os.makedirs(out_dir, exist_ok=True)
-        variant_meta[var_idx] = {
-            "parent": parent,
-            "operator": op,
-            "out_dir": out_dir,
-            "inputs_per_collection": args.inputs_per_collection,
-        }
-        for ii in range(args.inputs_per_collection):
-            plan.append((var_idx, op, parent, ii))
+        plan.append((ci, op))
 
     total = len(plan)
     print(
         f"[direct_mutate] dispatching {total} LLM calls "
-        f"({args.num_variants} variants x {args.inputs_per_collection} inputs, "
-        f"{args.jobs} workers)",
+        f"(pool size = {len(pool_inputs)}, {args.jobs} workers)",
         file=sys.stderr,
         flush=True,
     )
 
-    parent_inputs_cache: dict[str, list[str]] = {}
-
-    def parent_inputs(parent: str) -> list[str]:
-        if parent not in parent_inputs_cache:
-            parent_inputs_cache[parent] = list_collection_inputs(parent)
-        return parent_inputs_cache[parent]
-
     failures = 0
     done = 0
-    report_every = max(1, total // 20)  # print ~20 progress lines per run
+    report_every = max(1, total // 20)
     t0 = time.monotonic()
     with ThreadPoolExecutor(max_workers=args.jobs) as ex:
         futs = {}
-        for (var_idx, op, parent, ii) in plan:
+        for (ci, op) in plan:
             fut = ex.submit(
                 make_one_input,
                 provider,
                 args.backend,
                 op,
-                parent_inputs(parent),
+                pool_inputs,
                 args.format_name,
                 args.format_description,
                 args.temperature,
                 args.max_new_tokens,
             )
-            futs[fut] = (var_idx, op, ii)
+            futs[fut] = (ci, op)
         for fut in as_completed(futs):
-            var_idx, op, ii = futs[fut]
-            out_dir = variant_meta[var_idx]["out_dir"]
-            out_path = os.path.join(
-                out_dir, f"input_{ii:04d}{args.input_extension}"
-            )
+            ci, op = futs[fut]
+            cand_id = f"cand_{ci:08d}"
+            cand_dir = os.path.join(args.output_dir, cand_id)
+            os.makedirs(cand_dir, exist_ok=True)
+            out_path = os.path.join(cand_dir, f"input_{ci:08d}{args.input_extension}")
             try:
                 content = fut.result()
             except Exception as exc:
                 failures += 1
                 print(
-                    f"[direct_mutate] LLM call failed for var_{var_idx:04d}/{ii:04d}: {exc}",
+                    f"[direct_mutate] LLM call failed for {cand_id} ({op}): {exc}",
                     file=sys.stderr,
                 )
                 content = ""
@@ -222,21 +202,16 @@ def main() -> int:
                 rate = done / elapsed if elapsed > 0 else 0
                 eta = (total - done) / rate if rate > 0 else float("inf")
                 print(
-                    f"[direct_mutate] {done}/{total} inputs done "
+                    f"[direct_mutate] {done}/{total} candidates done "
                     f"({done*100//total}%) "
                     f"| {elapsed:.0f}s elapsed | ETA {eta:.0f}s",
                     file=sys.stderr,
                     flush=True,
                 )
 
-    for var_idx, meta in variant_meta.items():
-        meta_path = os.path.join(args.log_dir, f"var_{var_idx:04d}.json")
-        with open(meta_path, "w") as f:
-            json.dump(meta, f)
-
     if failures:
         print(f"[direct_mutate] WARNING: {failures} LLM calls failed", file=sys.stderr)
-    print(f"[direct_mutate] wrote {args.num_variants} variant collections to {args.output_dir}",
+    print(f"[direct_mutate] wrote {args.num_candidates} candidates to {args.output_dir}",
           file=sys.stderr)
     return 0
 
