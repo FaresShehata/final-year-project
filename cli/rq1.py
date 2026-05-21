@@ -65,9 +65,7 @@ def prepare(fuzzer, benchmark):
         case "elfuzz":
             act_name = "elm"
         case "elfuzz_direct":
-            # Direct mode uses the same target binary / workdir as elm — it
-            # only differs in how seeds are produced. Reuse elm's prepare step.
-            act_name = "elm"
+            act_name = "elfuzz_direct"
         case "elfuzz_nofs":
             act_name = "elmalt"
         case "isla":
@@ -255,10 +253,29 @@ def rq1_seed_cov_cmd(fuzzer, benchmark):
         click.echo(f"Using afl-showmap for {benchmark} with fuzzer {fuzzer}.")
         cov = rq1_seed_cov_showmap(fuzzer, benchmark)
     seed_cov_file = os.path.join(ANALYSIS_ROOT, "seed_cov.xlsx")
-    df = pd.read_excel(seed_cov_file, index_col=0, header=0, sheet_name=benchmark)
+    os.makedirs(ANALYSIS_ROOT, exist_ok=True)
+    if os.path.exists(seed_cov_file):
+        try:
+            df = pd.read_excel(seed_cov_file, index_col=0, header=0, sheet_name=benchmark)
+        except Exception:
+            df = pd.DataFrame()
+    else:
+        df = pd.DataFrame()
     df.loc[0, fuzzer] = cov
+    # Preserve existing sheets when updating a single benchmark sheet.
+    existing_sheets = {}
+    if os.path.exists(seed_cov_file):
+        try:
+            xl = pd.ExcelFile(seed_cov_file)
+            for sheet in xl.sheet_names:
+                if sheet != benchmark:
+                    existing_sheets[sheet] = pd.read_excel(seed_cov_file, index_col=0, header=0, sheet_name=sheet)
+        except Exception:
+            pass
     with pd.ExcelWriter(seed_cov_file) as writer:
         df.to_excel(writer, sheet_name=benchmark, index=True, header=True)
+        for sheet, sdf in existing_sheets.items():
+            sdf.to_excel(writer, sheet_name=sheet, index=True, header=True)
     click.echo(f"Updated seed coverage for {benchmark} with fuzzer {fuzzer}: {cov} edges.")
 
 def rq1_afl_update(entries: list[tuple[str, str, int]]) -> None:
@@ -282,22 +299,20 @@ def rq1_afl_update(entries: list[tuple[str, str, int]]) -> None:
             all_reps.add(rep)
         SUM_REP_SCRIPT = os.path.join(PROJECT_ROOT, "analysis", "rq1", "sum_rep.py")
         for rep in all_reps:
-            cmd_sum_rep = [
-                "python", SUM_REP_SCRIPT,
-                tmpdir_raw,
-                "update"
-            ]
+            sum_rep_file = os.path.join(PROJECT_ROOT, "analysis", "rq1", "results", f"rq1_sum_{rep}.xlsx")
+            sum_rep_mode = ["update"] if os.path.exists(sum_rep_file) else []
+            cmd_sum_rep = ["python", SUM_REP_SCRIPT, tmpdir_raw] + sum_rep_mode
             subprocess.run(cmd_sum_rep, check=True)
             click.echo(f"Summarized results for repetition {rep} updated.")
         SUM_SCRIPT = os.path.join(PROJECT_ROOT, "analysis", "rq1", "sum.py")
-        cmd_sum = [
-            "python", SUM_SCRIPT, tmpdir_raw, "update"
-        ]
+        sum_file = os.path.join(PROJECT_ROOT, "analysis", "rq1", "results", "rq1_sum.xlsx")
+        sum_mode = ["update"] if os.path.exists(sum_file) else []
+        cmd_sum = ["python", SUM_SCRIPT, tmpdir_raw] + sum_mode
         subprocess.run(cmd_sum, check=True)
         click.echo("Summarized results across all repetitions updated.")
-        cmd_std = [
-            "python", os.path.join(PROJECT_ROOT, "analysis", "rq1", "std.py"), tmpdir, "update"
-        ]
+        std_file = os.path.join(PROJECT_ROOT, "analysis", "rq1", "results", "rq1_std.xlsx")
+        std_mode = ["update"] if os.path.exists(std_file) else []
+        cmd_std = ["python", os.path.join(PROJECT_ROOT, "analysis", "rq1", "std.py"), tmpdir_raw] + std_mode
         subprocess.run(cmd_std, check=True)
         click.echo("Standard deviation results updated.")
         click.echo("AFL++ analysis completed.")

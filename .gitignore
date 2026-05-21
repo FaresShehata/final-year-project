@@ -5,6 +5,7 @@ tmp/**/*
 /preset/**/initial/
 /preset/**/gen*/
 /preset/**/stamps/
+/preset/**/pool/
 /preset/testgengif/gifdec/*
 !/preset/testgengif/gifdec/*.c
 !/preset/testgengif/gifdec/*.h
@@ -58,8 +59,8 @@ plot/table/*
 /evaluation/nospl_fuzzers/
 /evaluation/islearn_adapt/oracles/
 /evaluation/fr_adapt/*/instrumented_bin/
-/analysis/rq1/
-/analysis/rq2/
-/analysis/rq3/
-/analysis/timecost/
+/analysis/rq1/results/
+/analysis/rq2/results/
+/analysis/rq3/results/
+/analysis/timecost/x_*.csv
 /evaluation/elmfuzzers_inputs/

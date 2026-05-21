@@ -14,7 +14,10 @@ TRIAGE_ONE = os.path.join(PWD, "triage.py")
 def main(root, output, parallel, force_rerun):
     force_rerun_record = {}
     for token in force_rerun.split(","):
-        benchmark, fuzzer, rep = token.split("_")
+        if not token:
+            continue
+        head, rep = token.rsplit("_", 1)
+        benchmark, fuzzer = head.split("_", 1)
         rep_n = int(rep)
         if rep_n not in force_rerun_record:
             force_rerun_record[rep_n] = []

@@ -17,6 +17,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from pre_experiments import synthesize_fuzzer, synthesize_grammar, synthesize_semantics, produce, produce_glade
 from direct_mode import synthesize_direct
 from minimize import minimize_command
+from reset import reset as reset_run
 from rq1 import rq1_seed_cov_cmd, rq1_afl_run, rq1_afl_update
 from rq2 import rq2_afl_run, rq2_triage_command, rq2_real_world_cmd
 from rq3 import rq3_input_cov_command, rq3_evolve_trend_command
@@ -622,6 +623,24 @@ def rq3(debug):
 
 
 import shutil
+
+
+@cli.command(
+    name="reset",
+    help="Delete all local run artifacts (evolution dirs, analysis spreadsheets, plots). "
+         "Downloaded data (binaries, pre-built fuzzers, downloaded seeds) is preserved. "
+         "Run `elfuzz download --only-relocate` afterwards to restore downloaded spreadsheets.",
+)
+@click.option("--dry-run", is_flag=True, default=False, help="List what would be deleted without removing anything.")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Skip the confirmation prompt.")
+@click.help_option("--help", "-h")
+def reset(dry_run: bool, yes: bool):
+    if not dry_run and not yes:
+        click.confirm(
+            "This will permanently delete all local run artifacts. Continue?",
+            abort=True,
+        )
+    reset_run(dry_run=dry_run)
 
 
 @cli.command(name="plot", help="Reproduce the figures and tables.")

@@ -58,6 +58,7 @@ ISLA_GRAMMAR = {
     'elmnoinf',
     'elmnocomp',
     'elmnospl',
+    'elfuzz_direct',
 ]))
 def main(force, target, fuzzer):
     work_root = os.path.abspath(os.path.dirname(__file__))
@@ -79,6 +80,8 @@ def main(force, target, fuzzer):
             subdir = os.path.join(work_root, f'{target}_nocomp')
         case 'elmnospl':
             subdir = os.path.join(work_root, f'{target}_nospl')
+        case 'elfuzz_direct':
+            subdir = os.path.join(work_root, target)
         case _:
             logger.error(f'Unknown fuzzer: {fuzzer}')
             sys.exit(1)
@@ -129,7 +132,7 @@ def main(force, target, fuzzer):
             fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'isla')
         case 'islearn':
             fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'isla')
-        case 'elmalt' | 'elmnoinf' | 'elmnocomp' | 'elmnospl':
+        case 'elmalt' | 'elmnoinf' | 'elmnocomp' | 'elmnospl' | 'elfuzz_direct':
             fuzz_driver_dir = os.path.join(eval_root, 'fuzzdrivers', 'elmfuzz')
         case _:
             return NotImplemented()
@@ -141,6 +144,12 @@ def main(force, target, fuzzer):
             shutil.copy(os.path.join(extra_scripts_dir, f), subdir)
 
     match fuzzer:
+        case 'elfuzz_direct':
+            # elfuzz_direct generates inputs directly via LLM; no synthesised
+            # Python fuzzer programs exist. The binary + support files + driver
+            # scripts (copied above) are all that is needed.
+            pass
+
         case 'elm' | 'elmalt' | 'elmnoinf' | 'elmnocomp' | 'elmnospl':
             match fuzzer:
                 case 'elm':
@@ -153,7 +162,7 @@ def main(force, target, fuzzer):
                     elm_fuzzer_dir = os.path.join(eval_root, 'nocomp_fuzzers')
                 case 'elmnospl':
                     elm_fuzzer_dir = os.path.join(eval_root, 'nospl_fuzzers')
-            
+
             elm_fuzzers = None
             for fn in os.listdir(elm_fuzzer_dir):
                 if fn.startswith(target) and fn.endswith('.tar.xz'):
@@ -161,7 +170,7 @@ def main(force, target, fuzzer):
                     break
             assert elm_fuzzers is not None, f'No ELM fuzzer found for {target}'
             top_level = os.path.basename(elm_fuzzers).removesuffix(".tar.xz")
-                
+
             with tempfile.TemporaryDirectory() as td:
                 shutil.unpack_archive(elm_fuzzers, td, 'xztar')
                 for fn in os.listdir(os.path.join(td, top_level)):

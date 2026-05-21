@@ -1,0 +1,8 @@
+Benchmark,elm,glade,islearn
+jsoncpp,21h23min34s,11min48s,-1
+libxml2,1day1h34min55s,2h32min4s,187min20s
+sqlite3,1day16h38min31s,17min11.280s,102min32s
+re2,1day5h28min27s,6min47.244s,23min27s
+cpython3,2day07h32min40s,1h27min29.837s,425min17s
+librsvg,19h52min49s,1h7min8s,5min32s
+cvc5,2day6h56min38s,5h43min26s,5min39s
