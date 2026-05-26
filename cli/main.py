@@ -130,6 +130,13 @@ value for the estimation.",
     help="This option only works for fuzzer.elfuzz. It specifies the number of iterations for the LLM-driven evolution.",
 )
 @click.option(
+    "--total-time",
+    "-tt",
+    type=int,
+    default=None,
+    help="Total wall-clock budget (seconds) for the evolution loop. If set, the loop exits after the budget is exhausted OR --evolution-iterations completes, whichever comes first. The check is at iteration boundaries so the in-flight generation finishes. Only applies to targets <fuzzer.*>.",
+)
+@click.option(
     "--no-select-semantic-constraints",
     "--no-select",
     is_flag=True,
@@ -153,7 +160,7 @@ a random one from the constraints with the best recall and precision will be sel
     help="LLM backend to use for fuzzer synthesis.",
 )
 def synthesize(
-    target, benchmark, tgi_waiting, evolution_iterations, use_small_model, no_select_semantic_constraints, llm_backend
+    target, benchmark, tgi_waiting, evolution_iterations, total_time, use_small_model, no_select_semantic_constraints, llm_backend
 ):
     match target, benchmark:
         case ("semantic.islearn", "jsoncpp"):
@@ -168,6 +175,7 @@ def synthesize(
                 benchmark,
                 tgi_waiting=tgi_waiting,
                 evolution_iterations=evolution_iterations,
+                total_time=total_time,
                 use_small_model=use_small_model,
                 llm_backend=llm_backend,
             )
@@ -209,6 +217,13 @@ def synthesize(
     help="Number of iterations for the LLM-direct evolution.",
 )
 @click.option(
+    "--total-time",
+    "-tt",
+    type=int,
+    default=None,
+    help="Total wall-clock budget (seconds) for the evolution loop. If set, the loop exits after the budget is exhausted OR --evolution-iterations completes, whichever comes first. The check is at iteration boundaries so the in-flight generation finishes.",
+)
+@click.option(
     "--use-small-model",
     is_flag=True,
     default=False,
@@ -221,11 +236,12 @@ def synthesize(
     show_default=True,
     help="LLM backend to use for direct input synthesis.",
 )
-def direct(benchmark, tgi_waiting, evolution_iterations, use_small_model, llm_backend):
+def direct(benchmark, tgi_waiting, evolution_iterations, total_time, use_small_model, llm_backend):
     synthesize_direct(
         benchmark,
         tgi_waiting=tgi_waiting,
         evolution_iterations=evolution_iterations,
+        total_time=total_time,
         use_small_model=use_small_model,
         llm_backend=llm_backend,
     )
@@ -401,23 +417,43 @@ def info():
     required=True,
     type=click.Choice(["jsoncpp", "libxml2", "re2", "librsvg", "cvc5", "sqlite3", "cpython3"]),
 )
-@click.option("--time", "-t", type=int, default=600, show_default=True, help="The time to run the input generator.")
+@click.option(
+    "--total-time",
+    "-tt",
+    "total_time",
+    type=int,
+    default=600,
+    show_default=True,
+    help="Total wall-clock budget (seconds) for this invocation, shared across all fuzzers in the tarball.",
+)
+@click.option(
+    "--time",
+    "-t",
+    "time_deprecated",
+    type=int,
+    default=None,
+    hidden=True,
+    help="Deprecated alias for --total-time.",
+)
 @click.option("--debug", is_flag=True, default=False, hidden=True)
-def produce_command(fuzzer: str, benchmark: str, debug: bool, time: int):
+def produce_command(fuzzer: str, benchmark: str, debug: bool, total_time: int, time_deprecated: int | None):
+    if time_deprecated is not None:
+        click.echo("Warning: --time/-t is deprecated; use --total-time/-tt instead.", err=True)
+        total_time = time_deprecated
     match fuzzer, benchmark:
         case ("islearn", "jsoncpp") | ("islearn", "re2"):
             click.echo(f"Fuzzer {fuzzer} is not supported for benchmark {benchmark}.")
             return
     match fuzzer:
         case "glade":
-            produce_glade(benchmark, timelimit=time)
+            produce_glade(benchmark, timelimit=total_time)
         case "elfuzz_direct":
             click.echo(
                 "elfuzz_direct produces inputs directly during synthesis; the seed tarball is "
                 "already at extradata/seeds/raw/{benchmark}/elfuzz_direct/. `produce` is a no-op."
             )
         case "elfuzz" | "elfuzz_nofs" | "elfuzz_nocp" | "elfuzz_noin" | "elfuzz_nosp" | "isla" | "islearn" | "grmr":
-            produce(fuzzer, benchmark, debug=debug, timelimit=time)
+            produce(fuzzer, benchmark, debug=debug, timelimit=total_time)
         case _:
             click.echo(
                 f"Unknown fuzzer: {fuzzer}. Supported fuzzers are: elfuzz, elfuzz_nofs, elfuzz_nocp, elfuzz_noin, elfuzz_nosp, elfuzz_direct, isla, islearn, grmr, glade."

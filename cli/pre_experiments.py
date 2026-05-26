@@ -3,6 +3,7 @@ import subprocess
 from datetime import datetime
 import sys
 import shutil
+import shlex
 import click
 from common import PROJECT_ROOT, CLI_DIR, USER, trim_indent, UID
 from datetime import datetime
@@ -10,6 +11,34 @@ import tempfile
 import json
 from typing import Dict
 import select
+import re
+
+
+def _find_last_completed_gen_seeds(rundir_abs: str, evolution_iterations: int) -> str:
+    """Return the seeds/ dir of the highest-numbered gen* under rundir_abs.
+
+    The synth loop may exit early (e.g. --total-time hit), so gen{evolution_iterations}
+    won't always exist. Pick the highest gen whose seeds/ subdir is non-empty.
+    """
+    preferred = os.path.join(rundir_abs, f"gen{evolution_iterations}", "seeds")
+    if os.path.isdir(preferred) and os.listdir(preferred):
+        return preferred
+    gen_re = re.compile(r"^gen(\d+)$")
+    candidates = []
+    for name in os.listdir(rundir_abs):
+        m = gen_re.match(name)
+        if not m:
+            continue
+        seeds = os.path.join(rundir_abs, name, "seeds")
+        if os.path.isdir(seeds) and os.listdir(seeds):
+            candidates.append((int(m.group(1)), seeds))
+    if not candidates:
+        raise RuntimeError(
+            f"No completed gen*/seeds/ directories found under {rundir_abs}. "
+            "Did the evolution loop run at all?"
+        )
+    candidates.sort()
+    return candidates[-1][1]
 
 
 def synthesize_semantics(benchmark, no_select: bool):
@@ -177,7 +206,7 @@ def synthesize_grammar(benchmark):
 
 
 def synthesize_fuzzer(
-    target, benchmark, *, tgi_waiting=600, evolution_iterations=50, use_small_model=False, llm_backend="huggingface"
+    target, benchmark, *, tgi_waiting=600, evolution_iterations=50, total_time=None, use_small_model=False, llm_backend="huggingface"
 ):
     match target:
         case "elfuzz":
@@ -260,6 +289,8 @@ def synthesize_fuzzer(
         ]
         if evolution_iterations != 50:
             cmd.append(f"NUM_GENERATIONS={evolution_iterations}")
+        if total_time is not None:
+            cmd.append(f"ELFUZZ_TOTAL_TIME_BUDGET={total_time}")
         if use_small_model and llm_backend == "huggingface":
             # Match the model TGI is actually serving (start_tgi_servers_debug.sh
             # serves Qwen/Qwen2.5-Coder-1.5B). Without this, do_gen.sh would
@@ -311,7 +342,8 @@ def synthesize_fuzzer(
             result_name = f"{benchmark}_{datesuffix}.fuzzers"
             tmpdir = os.path.join(tmpdir_raw, result_name)
             os.makedirs(tmpdir, exist_ok=True)
-            result_dir = os.path.join(PROJECT_ROOT, rundir, f"gen{evolution_iterations}", "seeds")
+            result_dir = _find_last_completed_gen_seeds(os.path.join(PROJECT_ROOT, rundir), evolution_iterations)
+            click.echo(f"Packaging fuzzers from {result_dir}")
             for file in os.listdir(result_dir):
                 shutil.copy(os.path.join(result_dir, file), tmpdir)
             tar_result_cmd = [
@@ -450,38 +482,32 @@ def produce(fuzzer, benchmark, *, debug=False, timelimit=600):
     if not (fuzzer.startswith("elfuzz") and fuzzer != "elfuzz"):
         click.echo("Generation done. Now we have to collect all the test cases to one place. This may take a while...")
         SEED_DIR = os.path.join(WORKDIR, f"{benchmark}{dir_suffix}", "out")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            collect_dir = os.path.join(tmpdir, f"{benchmark}{info_tarball_suffix}", "seeds")
-            os.makedirs(collect_dir, exist_ok=True)
-            for dir in os.listdir(SEED_DIR):
-                p = os.path.join(SEED_DIR, dir)
-                if not os.path.isdir(p):
-                    continue
-                for file in os.listdir(p):
-                    file_p = os.path.join(p, file)
-                    target_file = os.path.join(collect_dir, f"{dir}_{file}")
-                    shutil.move(file_p, target_file)
-            result_dir = os.path.join(PROJECT_ROOT, "extradata", "seeds", "raw", benchmark, fuzzer_name)
-            if not os.path.exists(result_dir):
-                os.makedirs(result_dir)
-            datetag = datetime.now().strftime("%y%m%d")
-            cmd_tar = [
-                "tar",
-                "--zstd",
-                "-cf",
-                os.path.join(result_dir, datetag + ".tar.zst"),
-                f"{benchmark}{info_tarball_suffix}",
-            ]
-            subprocess.run(cmd_tar, check=True, env=os.environ.copy(), cwd=tmpdir, stdout=sys.stdout, stderr=sys.stderr)
-            click.echo(
-                f"Produced seeds for {benchmark} with {fuzzer} fuzzer collected in {os.path.join(result_dir, datetag + '.tar.zst')}"
-            )
+        result_dir = os.path.join(PROJECT_ROOT, "extradata", "seeds", "raw", benchmark, fuzzer_name)
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+        datetag = datetime.now().strftime("%y%m%d")
+        tarball_path = os.path.join(result_dir, datetag + ".tar.zst")
+        prefix = f"{benchmark}{info_tarball_suffix}"
+        # Stream files straight into the archive instead of shutil.move()-ing
+        # millions of files first. --transform rewrites ./worker/file paths to
+        # {prefix}/seeds/worker_file on the fly; -T0 parallelises zstd.
+        transform = f"s,^\\./\\([^/]*\\)/\\(.*\\),{prefix}/seeds/\\1_\\2,"
+        pipe_cmd = (
+            f"find . -mindepth 2 -type f -print0 | "
+            f"tar --null -T - -I {shlex.quote('zstd -T0')} "
+            f"-cf {shlex.quote(tarball_path)} "
+            f"--transform={shlex.quote(transform)}"
+        )
+        subprocess.run(pipe_cmd, shell=True, check=True, cwd=SEED_DIR, stdout=sys.stdout, stderr=sys.stderr)
+        click.echo(
+            f"Produced seeds for {benchmark} with {fuzzer} fuzzer collected in {tarball_path}"
+        )
     produce_info_dir = os.path.join(PROJECT_ROOT, "extradata", "produce_info")
     if not os.path.exists(produce_info_dir):
         os.makedirs(produce_info_dir)
     cmd_tar_raw = [
         "tar",
-        "--zstd",
+        "-I", "zstd -T0",
         "-cf",
         os.path.join(produce_info_dir, f"{benchmark}{info_tarball_suffix}.tar.zst"),
         f"{benchmark}{dir_suffix}",

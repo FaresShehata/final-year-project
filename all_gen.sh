@@ -24,6 +24,18 @@ else
 fi
 # Generations are zero-indexed
 last_gen=$((num_gens - 1))
+
+# Optional total-time budget (seconds). Soft cap: checked at iteration
+# boundaries so the in-flight do_gen.sh always runs to completion.
+time_budget=${ELFUZZ_TOTAL_TIME_BUDGET:-}
+loop_start=$(date +%s)
+_budget_exceeded() {
+    [ -z "$time_budget" ] && return 1
+    local now
+    now=$(date +%s)
+    local elapsed=$((now - loop_start))
+    [ "$elapsed" -ge "$time_budget" ]
+}
 genout_dir=$(./elmconfig.py get run.genoutput_dir -s GEN=. -s MODEL=.)
 export ENDPOINTS=$(./elmconfig.py get model.endpoints)
 export TYPE=$(./elmconfig.py get type)
@@ -89,24 +101,44 @@ elif [ "$TYPE" == "docker" ]; then
     python prepare_fuzzbench.py -t docker
 fi
 
+# Reset the budget clock so docker build/prepare doesn't count against the
+# user's --total-time. The budget is meant to cap evolution work only.
+loop_start=$(date +%s)
+
 if [ $start_gen -eq -1 ]; then
     mkdir -p "$ELMFUZZ_RUNDIR"/initial/{variants,seeds,logs}
     # Stamp dir tells us when a generation is fully finished
     # In the future this will let us resume a run
     mkdir -p "$ELMFUZZ_RUNDIR"/stamps
     cp -v $seeds "$ELMFUZZ_RUNDIR"/initial/seeds/
-    ./do_gen.sh initial gen0
-    for i in $(seq 0 $last_gen); do
-        ./do_gen.sh gen$i gen$((i+1))
-    done
+    if _budget_exceeded; then
+        echo "[all_gen] Total time budget (${time_budget}s) already exhausted; skipping evolution."
+    else
+        ./do_gen.sh initial gen0
+        for i in $(seq 0 $last_gen); do
+            if _budget_exceeded; then
+                echo "[all_gen] Total time budget (${time_budget}s) reached after $(($(date +%s) - loop_start))s; stopping before gen$((i+1))."
+                break
+            fi
+            ./do_gen.sh gen$i gen$((i+1))
+        done
+    fi
 else
     if [ $start_gen -eq 0 ]; then
         real_start_gen=0
-        ./do_gen.sh initial gen0
+        if _budget_exceeded; then
+            echo "[all_gen] Total time budget (${time_budget}s) already exhausted; skipping evolution."
+        else
+            ./do_gen.sh initial gen0
+        fi
     else
         real_start_gen=$((start_gen-1))
     fi
     for i in $(seq $real_start_gen $last_gen); do
+        if _budget_exceeded; then
+            echo "[all_gen] Total time budget (${time_budget}s) reached after $(($(date +%s) - loop_start))s; stopping before gen$((i+1))."
+            break
+        fi
         ./do_gen.sh gen$i gen$((i+1))
     done
 fi

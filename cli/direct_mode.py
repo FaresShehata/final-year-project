@@ -77,6 +77,7 @@ def synthesize_direct(
     *,
     tgi_waiting=1200,
     evolution_iterations=50,
+    total_time=None,
     use_small_model=False,
     llm_backend="huggingface",
 ):
@@ -172,6 +173,8 @@ def synthesize_direct(
         ]
         if use_small_model and llm_backend == "huggingface":
             run_cmd.append("ELFUZZ_DIRECT_HF_MODEL_OVERRIDE=Qwen/Qwen2.5-Coder-1.5B")
+        if total_time is not None:
+            run_cmd.append(f"ELFUZZ_TOTAL_TIME_BUDGET={total_time}")
         run_cmd += [
             os.path.join(PROJECT_ROOT, "all_gen_direct.sh"),
             rundir,
