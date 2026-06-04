@@ -1,0 +1,52 @@
+\documentclass[a4paper, twoside]{report}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+% \usepackage[colorinlistoftodos]{todonotes}
+\usepackage[inkscapelatex=false]{svg}
+
+\newcommand{\lilspace}[1][0.5]{\vspace{#1\baselineskip}}
+
+% New paragraphs don't indent
+\usepackage[parfill]{parskip}
+
+% Allow URLs to break anywhere for overflow
+\usepackage{xurl}
+
+\title{LLM-Driven Seed Corpus Synthesis for Fuzzing}
+\author{Fares Shehata}
+% Update supervisor and other title stuff in title/title.tex
+
+\begin{document}
+\input{title/title.tex}
+
+\tableofcontents
+% \listoffigures
+% \listoftables
+
+\input{introduction/introduction.tex}
+\input{background/background.tex}
+\input{project/project.tex}
+\input{evaluation/evaluation.tex}
+% \input{ethics/ethics.tex}
+\input{appendix/appendix.tex}
+
+\begingroup
+\sloppy
+\bibliographystyle{vancouver}
+\bibliography{bibs/sample}
+\endgroup
+
+
+\end{document}

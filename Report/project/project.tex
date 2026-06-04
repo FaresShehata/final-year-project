@@ -1,0 +1,52 @@
+\chapter{name}
+
+We present [name], a modification of elfuzz that uses the LLM to directly synthesize inputs, rather than fuzzers/generators.
+
+Modify elfuzz pipeline, remove the fuzzer generation step,. directly generate inputs
+
+two stages
+
+directly replace fuzzer with input
+
+evolve population of inputs
+
+
+directly replace
+
+explain how elfuzz has "generators" being evolved
+one generator can generate unlimited inputs
+
+diagrams form paper
+
+Replacing one generator with one input would not be equivalent as one single input can only cover so much of the sut, so instead we replace one generator with a collection of inputs.
+
+diagram showing replacement of a generator to a collection of inputs
+
+Use the same mutations, but now on individual inputs
+
+Diagrams with examples of each of the mutations on json inputs
+
+Maximise coverage set  on generators, no maximise coverage set on collection, same principle of subset
+
+Collections evolve, elites selected, new ones generated using LLM
+
+Problems
+
+fixed number of collections with fixed number of inputs, input size cant grow. Not a problems with generators that can generate infinite inputs
+Collections are disjoint, maybe one good input in one collection and one good input in another collection with disjoint coverages, but only one is in an elite collection, so the other is lost. So we lose information and progress when only keeping elites.
+
+Space for some preliminary results
+
+
+
+evolve population
+
+More straightforward, now the individual units of evolution are the inputs themselves, so we maintain one growing population.
+
+Diagram shwoing before many disjointed collections, and now one big collection
+
+Evolution process is similar
+
+take random ones and apply mutations look at coverage, if it has new coverage or improves it we add it, or replace strictly better ones with subset relation
+
+No loss of progress, inputs with disjoint coverage will both live on, and unbounded size.
