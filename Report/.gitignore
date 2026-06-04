@@ -1,0 +1,45 @@
+# LaTeX build artifacts for the report.
+
+# Core intermediates
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+
+# Bibliography
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+
+# latexmk
+*.fls
+*.fdb_latexmk
+
+# SyncTeX / editors
+*.synctex.gz
+*.synctex(busy)
+
+# Index / glossary / nomenclature (if ever used)
+*.idx
+*.ind
+*.ilg
+*.glo
+*.gls
+*.glg
+*.nlo
+*.nls
+
+# Beamer / misc auxiliary
+*.nav
+*.snm
+*.vrb
+*.auxlock
+
+# svg package (inkscape) cache
+svg-inkscape/
+
+# Keep all PDFs (compiled report + figure PDFs)
+!*.pdf
