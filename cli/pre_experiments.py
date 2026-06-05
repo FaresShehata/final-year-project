@@ -12,6 +12,7 @@ import json
 from typing import Dict
 import select
 import re
+import threading
 
 
 def _find_last_completed_gen_seeds(rundir_abs: str, evolution_iterations: int) -> str:
@@ -275,6 +276,22 @@ def synthesize_fuzzer(
                     if line:
                         print(line, flush=True)
             click.echo("Text-generation-inference server started.")
+
+            # CRITICAL: keep draining stdout/stderr for the remainder of the run.
+            # TGI logs a few lines per request; if we stop reading, the OS pipe
+            # buffer (~64KB) fills, `docker run` back-pressures the container,
+            # TGI blocks on its next write(), and the whole server stalls --
+            # every in-flight request hangs (the gen5-6 ReadTimeout crash).
+            # direct_mode.py already does this; synth was missing it.
+            def _drain(stream):
+                try:
+                    while stream.read(4096):
+                        pass
+                except Exception:
+                    pass
+
+            threading.Thread(target=_drain, args=(tgi_p.stdout,), daemon=True).start()
+            threading.Thread(target=_drain, args=(tgi_p.stderr,), daemon=True).start()
         except Exception as e:
             raise e
 
