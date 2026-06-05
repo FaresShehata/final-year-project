@@ -72,6 +72,32 @@ DEFAULT_NUM_CANDIDATES_PER_GEN = 1000
 OUTPUT_FUZZER_NAME = "elfuzz_direct"
 
 
+def _resolve_seed_corpus(benchmark: str) -> str:
+    """Locate a directory of real example inputs to few-shot-prime / seed direct
+    mode for this benchmark.
+
+    Priority: the ELFUZZ_DIRECT_SEED_CORPUS env override, then known in-repo /
+    in-container locations. Returns "" if none found, in which case direct mode
+    falls back to its no-corpus path (a lightweight format signal).
+    """
+    env = os.environ.get("ELFUZZ_DIRECT_SEED_CORPUS", "").strip()
+    if env:
+        return env
+    candidates = [
+        os.path.join(PROJECT_ROOT, "evaluation", "gramgen", benchmark, "inputs"),
+        os.path.join(PROJECT_ROOT, "extradata", "seeds", "examples", benchmark),
+    ]
+    for c in candidates:
+        try:
+            if os.path.isdir(c) and any(
+                os.path.isfile(os.path.join(c, f)) for f in os.listdir(c)
+            ):
+                return c
+        except OSError:
+            continue
+    return ""
+
+
 def synthesize_direct(
     benchmark,
     *,
@@ -84,6 +110,14 @@ def synthesize_direct(
     if benchmark not in DIRECT_FORMAT_METADATA:
         raise ValueError(f"benchmark {benchmark!r} not supported by direct mode")
     fmt = DIRECT_FORMAT_METADATA[benchmark]
+    seed_corpus = _resolve_seed_corpus(benchmark)
+    if seed_corpus:
+        click.echo(f"Using seed corpus for few-shot/seeding: {seed_corpus}")
+    else:
+        click.echo(
+            "No seed corpus found (set ELFUZZ_DIRECT_SEED_CORPUS to point at one); "
+            "falling back to no-corpus initial generation."
+        )
 
     env = os.environ.copy() | {
         "ELFUZZ_DIRECT_FORMAT_NAME": fmt["format_name"],
@@ -175,6 +209,8 @@ def synthesize_direct(
             run_cmd.append("ELFUZZ_DIRECT_HF_MODEL_OVERRIDE=Qwen/Qwen2.5-Coder-1.5B")
         if total_time is not None:
             run_cmd.append(f"ELFUZZ_TOTAL_TIME_BUDGET={total_time}")
+        if seed_corpus:
+            run_cmd.append(f"ELFUZZ_DIRECT_SEED_CORPUS={seed_corpus}")
         run_cmd += [
             os.path.join(PROJECT_ROOT, "all_gen_direct.sh"),
             rundir,

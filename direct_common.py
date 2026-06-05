@@ -20,12 +20,18 @@ COPILOT_STOP = ["\n```", "\nExplanation:", "\n\nNote:"]
 # ---------------------------------------------------------------------------
 
 
-def copilot_initial_prompt(format_name: str, format_description: str) -> str:
-    return (
+def copilot_initial_prompt(
+    format_name: str, format_description: str, examples: list[str] | None = None
+) -> str:
+    base = (
         f"Generate a single example of {format_description} ({format_name}). "
         "Output only the resulting content. Do NOT include explanations, "
         "markdown fences, preamble, or postamble. Output the content and nothing else."
     )
+    if examples:
+        ex_block = "\n\n".join(f"Example:\n{e}" for e in examples)
+        return f"{base}\n\n{ex_block}\n\nNow output a new, different example:"
+    return base
 
 
 def copilot_complete_prompt(format_name: str, format_description: str, prefix: str) -> str:
@@ -61,6 +67,16 @@ def copilot_splice_prompt(
 # ---------------------------------------------------------------------------
 
 
+def fewshot_delim(provider: LLMProvider) -> str:
+    """Separator between few-shot examples (and the stop sequence for the
+    generated one). Qwen2.5-Coder is pretrained with ``<|file_sep|>`` between
+    files, so we reuse it; other models get a generic sentinel."""
+    mid = getattr(provider, "model_id", "") or ""
+    if "Qwen2.5-Coder" in mid:
+        return "<|file_sep|>"
+    return "\n<<<ELFUZZ_NEXT_INPUT>>>\n"
+
+
 def build_direct_prompt(
     provider: LLMProvider,
     backend: str,
@@ -69,14 +85,18 @@ def build_direct_prompt(
     suffix: str,
     fmt_name: str,
     fmt_desc: str,
+    ext: str = "",
+    examples: list[str] | None = None,
 ) -> str:
     """Build a prompt string for the given backend and operator.
 
-    Operators: "initial", "complete", "infilled", "lmsplice".
+    Operators: "initial", "complete", "infilled", "lmsplice". ``examples`` (real
+    in-format inputs) few-shot-prime the "initial" op so the model knows what
+    format to produce.
     """
     if backend == "copilot":
         if op == "initial":
-            return copilot_initial_prompt(fmt_name, fmt_desc)
+            return copilot_initial_prompt(fmt_name, fmt_desc, examples)
         if op == "complete":
             return copilot_complete_prompt(fmt_name, fmt_desc, prefix)
         if op == "infilled":
@@ -87,7 +107,27 @@ def build_direct_prompt(
 
     # HuggingFace TGI: reuse the FIM-tokenised paths from synth.
     if op == "initial":
-        return prefix
+        if examples:
+            mid = getattr(provider, "model_id", "") or ""
+            if "Qwen2.5-Coder" in mid:
+                # Qwen2.5-Coder repo-completion format. CRUCIAL: give every
+                # few-shot example a `{ext}` filename so the model continues
+                # with one MORE file of the SAME type. A bare <|file_sep|> with
+                # no filename flips it into "generate arbitrary repo code" mode
+                # -- it emits .cs/.php/.cpp files, not the target format. The
+                # trailing prime starts the new file.
+                name = (fmt_name or "input").lower().replace(" ", "_")
+                parts = ["<|repo_name|>examples"]
+                for i, ex in enumerate(examples):
+                    parts.append(f"<|file_sep|>{name}_{i}{ext}\n{ex}")
+                parts.append(f"<|file_sep|>{name}_{len(examples)}{ext}\n{prefix}")
+                return "".join(parts)
+            # Generic base model: plain-delimiter few-shot continuation.
+            delim = fewshot_delim(provider)
+            return delim.join(examples) + delim + prefix
+        # No corpus: a lightweight format signal (from metadata) so a base code
+        # model doesn't free-associate into other languages.
+        return f"{fmt_desc} ({fmt_name}):\n{prefix}"
     if op == "complete":
         return prefix
     if op == "infilled":
@@ -100,6 +140,18 @@ def build_direct_prompt(
 def stop_for(backend: str, op: str) -> list[str] | None:
     if backend == "copilot":
         return list(COPILOT_STOP)
+    return None
+
+
+def initial_stop(
+    provider: LLMProvider, backend: str, examples: list[str] | None
+) -> list[str] | None:
+    """Stop sequence for initial-input generation: for HF few-shot, stop at the
+    example delimiter so the model emits exactly one fresh input."""
+    if backend == "copilot":
+        return list(COPILOT_STOP)
+    if examples:
+        return [fewshot_delim(provider)]
     return None
 
 

@@ -62,6 +62,7 @@ INPUT_EXTENSION=${ELFUZZ_DIRECT_INPUT_EXTENSION:-.bin}
 HF_INITIAL_PREFIX=${ELFUZZ_DIRECT_HF_INITIAL_PREFIX:-}
 FMT_NAME=${ELFUZZ_DIRECT_FORMAT_NAME:-text}
 FMT_DESC=${ELFUZZ_DIRECT_FORMAT_DESCRIPTION:-text input}
+SEED_CORPUS=${ELFUZZ_DIRECT_SEED_CORPUS:-}
 MODEL_TOKEN="direct"
 
 if [ "$LLM_BACKEND" = "copilot" ]; then
@@ -160,7 +161,8 @@ _bootstrap_pool() {
         --input-extension "$INPUT_EXTENSION" \
         --format-name "$FMT_NAME" \
         --format-description "$FMT_DESC" \
-        --hf-initial-prefix "$HF_INITIAL_PREFIX"
+        --hf-initial-prefix "$HF_INITIAL_PREFIX" \
+        --seed-corpus "$SEED_CORPUS"
 
     # Wrap each initial input into its own per-candidate dir so coverage
     # tooling produces one entry per input.
