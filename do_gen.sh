@@ -105,6 +105,14 @@ else
     VARIANT_ARGS=""
 fi
 echo "Generating next generation: ${NUM_VARIANTS} variants for each seed with each model"
+
+# genoutputs self-limits its worker count based on available memory (see
+# _resolve_jobs in genoutputs.py): the old default of ncpu (32) workers x ~1GB
+# per run OOM-killed the host and took down the desktop (2026-06-06). Only pass
+# an explicit -j when the user overrides via ELFUZZ_GENOUT_JOBS.
+GENOUT_JOBS_ARG=()
+[ -n "${ELFUZZ_GENOUT_JOBS:-}" ] && GENOUT_JOBS_ARG=(-j "${ELFUZZ_GENOUT_JOBS}")
+
 for model_name in $MODELS ; do
     MODEL=$(basename "$model_name")
     GVLOG="${LOGDIR}/meta"
@@ -118,7 +126,7 @@ for model_name in $MODELS ; do
     python genvariants_parallel.py $VARIANT_ARGS \
         --backend "$LLM_BACKEND" -M "${model_name}" -O "$GVOUT" -L "$GVLOG" \
         "$ELMFUZZ_RUNDIR"/${next_gen}/seeds/*.py | \
-        python genoutputs.py -L "${GOLOG}" -O "${GOOUT}" -g "${next_gen}"
+        python genoutputs.py "${GENOUT_JOBS_ARG[@]}" -L "${GOLOG}" -O "${GOOUT}" -g "${next_gen}"
     rm "$GOLOG"
 
     # python shrink_variants_in_dir.py --source-dir "${GVOUT}"
@@ -128,10 +136,15 @@ done
 echo "Collecting coverage of the generators"
 all_models_genout_dir=$(realpath -m "$GOOUT"/..)
 
+# Coverage parallelism. The default (64) spawns 64 parallel AFL jobs alongside
+# the resident TGI server and OOM-kills it on a 31GB host; 16 keeps the host-RAM
+# spike in check. Override with ELFUZZ_COV_JOBS on a bigger machine.
+COV_JOBS="${ELFUZZ_COV_JOBS:-16}"
+
 if [ $TYPE == "fuzzbench" ] || [ $TYPE == "oss-fuzz" ] || [ $TYPE == "docker" ]; then
-    python getcov_fuzzbench.py --image elmfuzz/"$PROJECT_NAME" --input "$all_models_genout_dir" --covfile "${LOGDIR}/coverage.json"
+    python getcov_fuzzbench.py --image elmfuzz/"$PROJECT_NAME" --input "$all_models_genout_dir" --covfile "${LOGDIR}/coverage.json" -j "$COV_JOBS"
 else
-    python getcov.py -O "${LOGDIR}/coverage.json" "$all_models_genout_dir"
+    python getcov.py -O "${LOGDIR}/coverage.json" -j "$COV_JOBS" "$all_models_genout_dir"
 fi
 
 

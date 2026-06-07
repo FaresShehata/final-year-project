@@ -32,6 +32,45 @@ logger = setup_custom_logger('root')
 from tqdm import tqdm
 from driver import ExceptionInfo, Result, ResultInfo, GenResult
 
+
+def _mem_available_bytes():
+    """Bytes of RAM currently available (Linux /proc/meminfo), or None."""
+    try:
+        with open('/proc/meminfo') as f:
+            for line in f:
+                if line.startswith('MemAvailable:'):
+                    return int(line.split()[1]) * 1024
+    except OSError:
+        pass
+    return None
+
+
+def _resolve_genoutputs_jobs(requested, per_worker_bytes):
+    """Memory-aware worker count for the genoutputs pool.
+
+    An explicit --jobs always wins. Otherwise size the pool so peak demand
+    (jobs x per_worker_bytes, the per-run --driver.max-mem ceiling) stays within
+    GENOUTPUTS_MEMORY_FRACTION (default 0.5) of the RAM available *right now*,
+    leaving headroom for the resident TGI server and the desktop. The previous
+    default -- ncpu (32) workers x ~1GB each -- could demand ~32GB on a 31GB
+    host and triggered a global OOM that killed the desktop session.
+    """
+    ncpu = os.cpu_count() or 1
+    if requested is not None:
+        return max(1, requested)
+    avail = _mem_available_bytes()
+    if avail is None or not per_worker_bytes or per_worker_bytes <= 0:
+        return ncpu
+    try:
+        frac = float(os.environ.get('GENOUTPUTS_MEMORY_FRACTION', '0.5'))
+    except ValueError:
+        frac = 0.5
+    frac = min(max(frac, 0.05), 1.0)
+    budget = int(avail * frac)
+    jobs = max(1, budget // per_worker_bytes)
+    return min(jobs, ncpu)
+
+
 # Global color cycle with ANSI colors
 COLOR_GREEN = '\033[92m'
 COLOR_RED = '\033[91m'
@@ -366,7 +405,22 @@ def generate_corpus(module_path, input_seeds: str, worker_dir, args):
         # Read the results from the logfile
         with open(os.path.join(worker_dir, logfile_name)) as f:
             for line in f:
-                gen_results.append(json.loads(line))
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    gen_results.append(json.loads(line))
+                except json.JSONDecodeError:
+                    # driver.py was killed mid-write (timeout / -M memory limit),
+                    # leaving a truncated trailing line. Skip it -- the complete
+                    # lines before it are still valid results -- instead of
+                    # crashing the worker and failing the whole generation
+                    # (raise_errors is on for this benchmark).
+                    logger.warning(
+                        f"Skipping malformed result line in {logfile_name} for "
+                        f"{module_name} (driver likely killed mid-write)"
+                    )
+                    continue
         # remove the logfile
         os.remove(os.path.join(worker_dir, logfile_name))
     except FileNotFoundError:
@@ -546,8 +600,30 @@ def main():
     # if args.driver.real_feedback:
     #     print('INFO: Using real feedback', file=sys.stderr)
 
-    # Call generate_all on each module in args.module_paths in parallel
-    with ProcessPoolExecutor(max_workers=args.jobs) as executor:
+    # Call generate_all on each module in args.module_paths in parallel.
+    # Cap workers by available memory so the pool can't OOM the host (see
+    # _resolve_genoutputs_jobs); an explicit -j still overrides.
+    #
+    # A worker uses well more than its per-run --driver.max-mem ceiling: the
+    # worker process itself plus the driver.py subprocess pushed real RSS to
+    # ~1.5-1.9GB for a 1GB ceiling in the OOM that killed the desktop (gen291,
+    # 2026-06-07). Budget at GENOUTPUTS_MEM_OVERHEAD x the ceiling (default 2x)
+    # so the cap reflects actual usage instead of allowing ~2x too many workers.
+    try:
+        _overhead = float(os.environ.get('GENOUTPUTS_MEM_OVERHEAD', '2.0'))
+    except ValueError:
+        _overhead = 2.0
+    per_worker_bytes = int(args.driver.max_mem * max(_overhead, 1.0))
+    jobs = _resolve_genoutputs_jobs(args.jobs, per_worker_bytes)
+    print(
+        f"INFO: genoutputs using {jobs} parallel worker(s) "
+        f"(memory-aware default; ~{per_worker_bytes // (1024*1024)}MB/worker budget, "
+        f"GENOUTPUTS_MEMORY_FRACTION={os.environ.get('GENOUTPUTS_MEMORY_FRACTION', '0.5')}, "
+        f"GENOUTPUTS_MEM_OVERHEAD={os.environ.get('GENOUTPUTS_MEM_OVERHEAD', '2.0')}, override with -j)",
+        file=sys.stderr,
+        flush=True,
+    )
+    with ProcessPoolExecutor(max_workers=jobs) as executor:
         progress = (tqdm(total=module_count, desc="Generating", unit="mod")
                     if ON_NSF_ACCESS
                     else txdm(total=module_count, desc="Generating", unit="mod", file=sys.stdout))

@@ -86,6 +86,12 @@ _step_end
 # ---- 3. Coverage collection ----------------------------------------------
 _step_start "coverage collection"
 
+# Coverage parallelism. The default (64) spawns 64 parallel AFL jobs alongside
+# the resident TGI server and OOM-kills the host on a 31GB box; 16 keeps the
+# host-RAM spike in check. Override with ELFUZZ_COV_JOBS on a bigger machine.
+# (Mirrors do_gen.sh.)
+COV_JOBS="${ELFUZZ_COV_JOBS:-16}"
+
 if [ "${TYPE:-}" = "fuzzbench" ] || [ "${TYPE:-}" = "oss-fuzz" ] || [ "${TYPE:-}" = "docker" ]; then
     # getcov_fuzzbench.py uses shutil.move on the input; stage a copy so the
     # persistent candidates tree survives.
@@ -96,10 +102,11 @@ if [ "${TYPE:-}" = "fuzzbench" ] || [ "${TYPE:-}" = "oss-fuzz" ] || [ "${TYPE:-}
     python getcov_fuzzbench.py \
         --image elmfuzz/"$PROJECT_NAME" \
         --input "$cov_staging" \
-        --covfile "${LOGDIR}/coverage.json"
+        --covfile "${LOGDIR}/coverage.json" \
+        -j "$COV_JOBS"
     rm -rf "$cov_staging"
 else
-    python getcov.py -O "${LOGDIR}/coverage.json" "$candidates_root"
+    python getcov.py -O "${LOGDIR}/coverage.json" -j "$COV_JOBS" "$candidates_root"
 fi
 
 _step_end
