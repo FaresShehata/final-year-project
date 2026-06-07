@@ -153,6 +153,13 @@ a random one from the constraints with the best recall and precision will be sel
     help="Use Qwen2.5-Coder-1.5B instead of CodeLlama-13b-hf to verify the functionality on a GPU with limited VRAM. This option only works for targets <fuzzer.*>.",
 )
 @click.option(
+    "--resume",
+    "-R",
+    is_flag=True,
+    default=False,
+    help="Resume a previous, interrupted evolution instead of starting fresh. Picks up from the last fully-completed generation (the highest <rundir>/stamps/genN.stamp); earlier generations are kept and only the partial generation is redone. Only applies to targets <fuzzer.*>.",
+)
+@click.option(
     "--llm-backend",
     type=click.Choice(["huggingface", "copilot"]),
     default="huggingface",
@@ -160,7 +167,7 @@ a random one from the constraints with the best recall and precision will be sel
     help="LLM backend to use for fuzzer synthesis.",
 )
 def synthesize(
-    target, benchmark, tgi_waiting, evolution_iterations, total_time, use_small_model, no_select_semantic_constraints, llm_backend
+    target, benchmark, tgi_waiting, evolution_iterations, total_time, use_small_model, no_select_semantic_constraints, llm_backend, resume
 ):
     match target, benchmark:
         case ("semantic.islearn", "jsoncpp"):
@@ -178,6 +185,7 @@ def synthesize(
                 total_time=total_time,
                 use_small_model=use_small_model,
                 llm_backend=llm_backend,
+                resume=resume,
             )
             return
         case "grammar.glade":
@@ -230,13 +238,20 @@ def synthesize(
     help="Use Qwen2.5-Coder-1.5B instead of CodeLlama-13b-hf (huggingface backend only).",
 )
 @click.option(
+    "--resume",
+    "-R",
+    is_flag=True,
+    default=False,
+    help="Resume a previous, interrupted direct run instead of starting fresh. Picks up from the last fully-completed generation (the highest <rundir>/stamps/genN.stamp, or the bootstrapped pool if only initial.stamp exists); the growing input pool is kept.",
+)
+@click.option(
     "--llm-backend",
     type=click.Choice(["huggingface", "copilot"]),
     default="huggingface",
     show_default=True,
     help="LLM backend to use for direct input synthesis.",
 )
-def direct(benchmark, tgi_waiting, evolution_iterations, total_time, use_small_model, llm_backend):
+def direct(benchmark, tgi_waiting, evolution_iterations, total_time, use_small_model, resume, llm_backend):
     synthesize_direct(
         benchmark,
         tgi_waiting=tgi_waiting,
@@ -244,6 +259,7 @@ def direct(benchmark, tgi_waiting, evolution_iterations, total_time, use_small_m
         total_time=total_time,
         use_small_model=use_small_model,
         llm_backend=llm_backend,
+        resume=resume,
     )
 
 

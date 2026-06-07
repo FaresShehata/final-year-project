@@ -8,6 +8,7 @@ coverage and either added, used to replace a strictly inferior pool input
 """
 
 import os
+import re
 import select
 import shutil
 import subprocess
@@ -98,6 +99,31 @@ def _resolve_seed_corpus(benchmark: str) -> str:
     return ""
 
 
+def _detect_direct_resume_start_gen(rundir_abs: str) -> int:
+    """Generation index to resume a direct run at.
+
+    Direct mode keeps a single growing input pool and stamps each finished step
+    (initial.stamp after bootstrap, genN.stamp per generation, written by
+    all_gen_direct.sh / do_gen_direct.sh). Resume one past the highest genN
+    stamp; if only the bootstrap finished, resume at gen0. all_gen_direct.sh
+    keeps the pool and gens < start_gen and redoes the rest.
+    """
+    stamps_dir = os.path.join(rundir_abs, "stamps")
+    if not os.path.isdir(stamps_dir):
+        raise click.ClickException(
+            f"--resume requested but no stamps directory at {stamps_dir}; nothing to resume."
+        )
+    names = os.listdir(stamps_dir)
+    gens = [int(m.group(1)) for n in names if (m := re.fullmatch(r"gen(\d+)\.stamp", n))]
+    if gens:
+        return max(gens) + 1
+    if "initial.stamp" in names:
+        return 0
+    raise click.ClickException(
+        f"--resume requested but no completed stamps in {stamps_dir}; nothing to resume."
+    )
+
+
 def synthesize_direct(
     benchmark,
     *,
@@ -106,6 +132,7 @@ def synthesize_direct(
     total_time=None,
     use_small_model=False,
     llm_backend="huggingface",
+    resume=False,
 ):
     if benchmark not in DIRECT_FORMAT_METADATA:
         raise ValueError(f"benchmark {benchmark!r} not supported by direct mode")
@@ -215,6 +242,13 @@ def synthesize_direct(
             os.path.join(PROJECT_ROOT, "all_gen_direct.sh"),
             rundir,
         ]
+        if resume:
+            # all_gen_direct.sh's second positional arg makes it keep the pool
+            # and gens < start_gen and resume the loop instead of wiping.
+            start_gen = _detect_direct_resume_start_gen(os.path.join(PROJECT_ROOT, rundir))
+            _last = "bootstrap" if start_gen == 0 else f"gen{start_gen - 1}"
+            click.echo(f"Resuming direct run from gen{start_gen} (last completed: {_last})")
+            run_cmd.append(str(start_gen))
         # Run without shell=True so spaces in env-var values (e.g. "valid JSON
         # document") are preserved as a single argument, instead of being split
         # by the shell and confusing `env`.

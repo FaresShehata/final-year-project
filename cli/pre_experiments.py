@@ -206,8 +206,29 @@ def synthesize_grammar(benchmark):
     click.echo(f"Grammar for {benchmark} synthesized successfully: {os.path.join(gram_dir, gram_file_generated[0])}.")
 
 
+def _detect_resume_start_gen(rundir_abs: str) -> int:
+    """Return the generation index to resume at: one past the highest completed
+    stamp (<rundir>/stamps/genN.stamp, written by do_gen.sh when a generation
+    fully finishes). all_gen.sh keeps gens < start_gen and redoes the rest."""
+    stamps_dir = os.path.join(rundir_abs, "stamps")
+    if not os.path.isdir(stamps_dir):
+        raise click.ClickException(
+            f"--resume requested but no stamps directory at {stamps_dir}; nothing to resume."
+        )
+    gens = [
+        int(m.group(1))
+        for name in os.listdir(stamps_dir)
+        if (m := re.fullmatch(r"gen(\d+)\.stamp", name))
+    ]
+    if not gens:
+        raise click.ClickException(
+            f"--resume requested but no completed-generation stamps in {stamps_dir}; nothing to resume."
+        )
+    return max(gens) + 1
+
+
 def synthesize_fuzzer(
-    target, benchmark, *, tgi_waiting=600, evolution_iterations=50, total_time=None, use_small_model=False, llm_backend="huggingface"
+    target, benchmark, *, tgi_waiting=600, evolution_iterations=50, total_time=None, use_small_model=False, llm_backend="huggingface", resume=False
 ):
     match target:
         case "elfuzz":
@@ -318,6 +339,12 @@ def synthesize_fuzzer(
             os.path.join(PROJECT_ROOT, "all_gen.sh"),
             rundir,
         ]
+        if resume:
+            # all_gen.sh's second positional arg makes it keep gens < start_gen
+            # and resume the loop from there instead of wiping everything.
+            start_gen = _detect_resume_start_gen(os.path.join(PROJECT_ROOT, rundir))
+            click.echo(f"Resuming evolution from gen{start_gen} (last completed: gen{start_gen - 1})")
+            cmd.append(str(start_gen))
         print(f"Running command: {' '.join(cmd)}", flush=True)
         subprocess.run(
             " ".join(cmd), check=True, shell=True, user=USER, cwd=PROJECT_ROOT, stdout=sys.stdout, stderr=sys.stderr
