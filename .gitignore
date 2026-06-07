@@ -64,3 +64,8 @@ plot/table/*
 /analysis/rq3/results/
 /analysis/timecost/x_*.csv
 /evaluation/elmfuzzers_inputs/
+
+/seed_corpora/
+/logs/
+/results/
+.vscode/settings.json
