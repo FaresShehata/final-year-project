@@ -3,13 +3,30 @@ from __future__ import annotations
 import atexit
 import asyncio
 import os
+import subprocess
 import sys
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, cast
 
 from copilot import CopilotClient
+
+# --- TGI resilience config -------------------------------------------------
+# The TGI server runs in a Docker container that can be OOM-killed mid-run
+# (e.g. the host RAM spike from the parallel coverage step). Since the
+# container is no longer started with --rm, a crashed server can be revived
+# with `docker start`. These knobs control how aggressively we retry/restart.
+_TGI_MAX_ATTEMPTS = int(os.environ.get("ELFUZZ_TGI_MAX_ATTEMPTS", "6"))
+_TGI_BACKOFF_BASE = float(os.environ.get("ELFUZZ_TGI_BACKOFF_BASE", "2.0"))
+_TGI_BACKOFF_CAP = float(os.environ.get("ELFUZZ_TGI_BACKOFF_CAP", "20.0"))
+_TGI_HEALTH_TIMEOUT = float(os.environ.get("ELFUZZ_TGI_HEALTH_TIMEOUT", "180.0"))
+_TGI_CONTAINER = os.environ.get("TGI_CONTAINER_NAME") or os.environ.get("DOCKER_NAME") or "tgi-server"
+_TGI_AUTORESTART = os.environ.get("ELFUZZ_TGI_AUTORESTART", "1").lower() not in ("0", "false", "no", "")
+# Serialize restart attempts: when the server dies, every worker thread sees
+# the failure at once; only one should try to bring it back up.
+_tgi_restart_lock = threading.Lock()
 
 HUGGINGFACE_TOKEN_PATH = Path.home() / ".config" / "huggingface" / "token"
 COPILOT_TOKEN_PATH = Path.home() / ".config" / "github-copilot" / "token"
@@ -88,7 +105,89 @@ class HuggingFaceTGIProvider:
         }
         if stop is not None:
             data["parameters"]["stop"] = stop
-        return requests.post(f"{self.endpoint}/generate", json=data, timeout=120).json()
+
+        # Retry transport-level failures (server down / stalled). We deliberately
+        # do NOT retry on HTTP error *responses* (e.g. 422 validation): those come
+        # back as JSON and the caller already handles them as a failed variant.
+        last_exc: Exception | None = None
+        for attempt in range(1, _TGI_MAX_ATTEMPTS + 1):
+            try:
+                return requests.post(f"{self.endpoint}/generate", json=data, timeout=120).json()
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                last_exc = e
+                if attempt >= _TGI_MAX_ATTEMPTS:
+                    break
+                # Connection refused => the server process is gone (likely
+                # OOM-killed). Try to revive the container before retrying.
+                if isinstance(e, requests.exceptions.ConnectionError):
+                    self._ensure_server_up()
+                delay = min(_TGI_BACKOFF_CAP, _TGI_BACKOFF_BASE * (2 ** (attempt - 1)))
+                print(
+                    f"WARNING: TGI request to {self.endpoint} failed "
+                    f"(attempt {attempt}/{_TGI_MAX_ATTEMPTS}, {type(e).__name__}); "
+                    f"retrying in {delay:.0f}s",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(delay)
+        assert last_exc is not None
+        raise last_exc
+
+    def _ensure_server_up(self) -> None:
+        """Best-effort revival of a dead TGI container.
+
+        Only one thread restarts at a time; the rest wait on the lock and then
+        find the server already healthy. Failures here are non-fatal -- the
+        caller will simply keep retrying the request.
+        """
+        if not _TGI_AUTORESTART:
+            return
+        import requests
+
+        health_url = f"{self.endpoint}/health"
+        with _tgi_restart_lock:
+            # Another thread may have already brought it back.
+            try:
+                if requests.get(health_url, timeout=5).ok:
+                    return
+            except requests.exceptions.RequestException:
+                pass
+
+            print(
+                f"WARNING: TGI endpoint {self.endpoint} is down; "
+                f"attempting `docker start {_TGI_CONTAINER}`",
+                file=sys.stderr,
+                flush=True,
+            )
+            docker = ["docker"] if os.geteuid() == 0 else ["sudo", "docker"]
+            try:
+                subprocess.run(
+                    docker + ["start", _TGI_CONTAINER],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=60,
+                )
+            except Exception as e:  # docker missing, perms, timeout, ...
+                print(f"WARNING: could not restart TGI container: {e}", file=sys.stderr, flush=True)
+                return
+
+            # Wait for the model to reload and the server to report healthy.
+            deadline = time.monotonic() + _TGI_HEALTH_TIMEOUT
+            while time.monotonic() < deadline:
+                try:
+                    if requests.get(health_url, timeout=5).ok:
+                        print(f"INFO: TGI endpoint {self.endpoint} is back up", file=sys.stderr, flush=True)
+                        return
+                except requests.exceptions.RequestException:
+                    pass
+                time.sleep(3)
+            print(
+                f"WARNING: TGI endpoint {self.endpoint} did not become healthy "
+                f"within {_TGI_HEALTH_TIMEOUT:.0f}s of restart",
+                file=sys.stderr,
+                flush=True,
+            )
 
 
 @dataclass

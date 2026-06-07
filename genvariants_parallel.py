@@ -334,8 +334,34 @@ def main():
             future = executor.submit(generate_variant, i, generators, model, filename, args)
             # future.add_done_callback(lambda _: pbar.update())
             futures.append(future)
+        # A single failed variant must not abort the whole generation (and with
+        # it the multi-hour pipeline). The provider already retries/restarts on
+        # transient backend failures; here we tolerate the few that still slip
+        # through, and only bail if the backend looks truly unrecoverable
+        # (a large and majority share of variants failing).
+        completed = 0
+        failures = 0
         for future in as_completed(futures):
-            res = future.result()
+            completed += 1
+            try:
+                res = future.result()
+            except Exception as e:
+                failures += 1
+                print(
+                    f"WARNING: variant generation failed ({failures} so far): "
+                    f"{type(e).__name__}: {e}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                if failures >= 20 and failures > completed * 0.5:
+                    print(
+                        "ERROR: majority of variants failing; backend appears "
+                        "unrecoverable, aborting generation",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    raise
+                continue
             if res is not None:
                 print(res, flush=True)
     # pbar.close()
