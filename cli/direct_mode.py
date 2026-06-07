@@ -85,6 +85,9 @@ def _resolve_seed_corpus(benchmark: str) -> str:
     if env:
         return env
     candidates = [
+        # Downloaded online corpora (tools/fetch_seed_corpora.sh) take priority:
+        # these are the intended initial population for direct mode.
+        os.path.join(PROJECT_ROOT, "seed_corpora", benchmark),
         os.path.join(PROJECT_ROOT, "evaluation", "gramgen", benchmark, "inputs"),
         os.path.join(PROJECT_ROOT, "extradata", "seeds", "examples", benchmark),
     ]

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import random
+import shutil
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -21,8 +22,34 @@ from direct_common import (
 )
 
 
+def _is_corpus_input(name: str) -> bool:
+    """True for real corpus input files (skip provenance / hidden files)."""
+    return name not in ("SOURCE.txt", "README.md", "README") and not name.startswith(".")
+
+
+def list_corpus_files(corpus_dir: str, max_files: int = 100000) -> list[str]:
+    """Return paths of all real corpus input files (sorted), or [] if none.
+
+    Used to copy the corpus directly into the initial population, so unlike
+    ``load_corpus`` it does NOT filter by size -- real XML/SVG/Python/SMT inputs
+    are routinely larger than a few hundred chars.
+    """
+    if not corpus_dir or not os.path.isdir(corpus_dir):
+        return []
+    out: list[str] = []
+    for name in sorted(os.listdir(corpus_dir)):
+        if not _is_corpus_input(name):
+            continue
+        p = os.path.join(corpus_dir, name)
+        if os.path.isfile(p):
+            out.append(p)
+        if len(out) >= max_files:
+            break
+    return out
+
+
 def load_corpus(corpus_dir: str, max_files: int = 512, max_chars: int = 800) -> list[str]:
-    """Load real example inputs for few-shot priming / direct seeding.
+    """Load small real example inputs as few-shot examples.
 
     Skips files larger than ``max_chars`` so few-shot prompts stay small, and
     returns ``[]`` when the dir is missing/empty (callers fall back to the
@@ -32,6 +59,8 @@ def load_corpus(corpus_dir: str, max_files: int = 512, max_chars: int = 800) -> 
         return []
     out: list[str] = []
     for name in sorted(os.listdir(corpus_dir)):
+        if not _is_corpus_input(name):
+            continue
         p = os.path.join(corpus_dir, name)
         if not os.path.isfile(p):
             continue
@@ -76,10 +105,15 @@ def parse_args() -> argparse.Namespace:
         "to directly seed a few guaranteed in-format inputs.",
     )
     p.add_argument("--few-shot-k", type=int, default=3,
-                   help="Number of corpus examples to show the model per call.")
-    p.add_argument("--seed-copies", type=int, default=16,
-                   help="How many real corpus examples to copy directly into the "
-                        "initial set (guaranteed in-format).")
+                   help="Number of corpus examples to show the model per LLM call.")
+    p.add_argument("--seed-copies", type=int, default=-1,
+                   help="How many real corpus files to copy directly into the initial "
+                        "population. -1 (default) = the whole corpus (capped at "
+                        "--num-initial-inputs); the corpus IS the initial population.")
+    p.add_argument("--topup-llm", action="store_true",
+                   help="When a corpus is present, also LLM-generate (few-shot-primed) "
+                        "to top the population up to --num-initial-inputs. Off by "
+                        "default so the population is the real corpus only.")
     p.add_argument("--temperature", type=float, default=0.9)
     p.add_argument("--max-new-tokens", type=int, default=512)
     p.add_argument("-j", "--jobs", type=int, default=16)
@@ -128,42 +162,63 @@ def main() -> int:
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
-    provider = create_provider(
-        args.backend,
-        model_id=args.model,
-        endpoint=args.endpoint,
-    )
-
-    corpus = load_corpus(args.seed_corpus)
     n = args.num_initial_inputs
-    n_copies = min(len(corpus), max(0, args.seed_copies)) if corpus else 0
-    k = min(args.few_shot_k, len(corpus)) if corpus else 0
+    corpus_files = list_corpus_files(args.seed_corpus)          # real files (any size)
+    fewshot_pool = load_corpus(args.seed_corpus)               # small few-shot examples
+    k = min(args.few_shot_k, len(fewshot_pool)) if fewshot_pool else 0
+
+    # The corpus IS the initial population: copy real files directly (capped at
+    # n). --seed-copies < 0 means "all of it"; a positive value caps the copies.
+    if corpus_files:
+        want = len(corpus_files) if args.seed_copies < 0 else max(0, args.seed_copies)
+        n_copies = min(want, len(corpus_files), n)
+    else:
+        n_copies = 0
+
+    # LLM generation: fill the whole population when there's no corpus, or only
+    # top up to n when --topup-llm is set. Otherwise the population is the corpus.
+    if not corpus_files:
+        n_gen = n
+    elif args.topup_llm:
+        n_gen = max(0, n - n_copies)
+    else:
+        n_gen = 0
+
     print(
-        f"[direct_initial] generating {n} initial inputs into {args.output_dir} "
-        f"(corpus={len(corpus)} examples from {args.seed_corpus or '<none>'}; "
-        f"{n_copies} copied directly, {n - n_copies} via LLM, few-shot k={k})",
+        f"[direct_initial] initial population -> {args.output_dir} "
+        f"(corpus={len(corpus_files)} files from {args.seed_corpus or '<none>'}; "
+        f"{n_copies} copied directly, {n_gen} via LLM, few-shot k={k})",
         file=sys.stderr,
         flush=True,
     )
 
     written = 0
-    # 1. Seed a few real examples directly so the pool always has in-format seeds.
-    for content in (random.sample(corpus, n_copies) if n_copies else []):
+    # 1. Copy real corpus files directly (preserve exact bytes) as the population.
+    chosen = corpus_files if n_copies >= len(corpus_files) else random.sample(corpus_files, n_copies)
+    for src in chosen[:n_copies]:
         out_path = os.path.join(
             args.output_dir, f"input_{written:08d}{args.input_extension}"
         )
-        with open(out_path, "w", encoding="utf-8", errors="replace") as f:
-            f.write(content)
-        written += 1
+        try:
+            shutil.copyfile(src, out_path)
+            written += 1
+        except OSError as exc:
+            print(f"[direct_initial] skip {src}: {exc}", file=sys.stderr)
 
     # 2. LLM-generate the remainder, few-shot-primed from the corpus when present.
+    #    Only spin up the LLM provider if we actually need to generate (a pure
+    #    corpus population needs no TGI/endpoint at all).
     failures = 0
-    n_gen = n - written
     if n_gen > 0:
+        provider = create_provider(
+            args.backend,
+            model_id=args.model,
+            endpoint=args.endpoint,
+        )
         with ThreadPoolExecutor(max_workers=args.jobs) as ex:
             futs = []
             for _ in range(n_gen):
-                examples = random.sample(corpus, k) if k else None
+                examples = random.sample(fewshot_pool, k) if k else None
                 futs.append(ex.submit(
                     generate_one,
                     provider,
@@ -193,7 +248,11 @@ def main() -> int:
 
     if failures:
         print(f"[direct_initial] WARNING: {failures} LLM calls failed", file=sys.stderr)
-    print(f"[direct_initial] wrote {n} inputs to {args.output_dir}", file=sys.stderr)
+    print(
+        f"[direct_initial] wrote {written + n_gen} inputs to {args.output_dir} "
+        f"({written} from corpus, {n_gen} via LLM)",
+        file=sys.stderr,
+    )
     return 0
 
 
