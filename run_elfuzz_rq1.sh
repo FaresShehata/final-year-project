@@ -12,10 +12,10 @@
 set -euo pipefail
 
 # ============================== CHOICES ====================================
-SUT="jsoncpp"             # jsoncpp | libxml2 | re2 | librsvg | cvc5 | sqlite3 | cpython3
+SUT="cpython3"        # jsoncpp | libxml2 | re2 | librsvg | cvc5 | sqlite3 | cpython3
 
 # --- synth: LLM-driven evolution of the input generators ---
-SYNTH_TOTAL_TIME=8050     # wall-clock budget in seconds (-tt)
+SYNTH_TOTAL_TIME=21660     # wall-clock budget in seconds (-tt)
 SYNTH_ITERATIONS=1000       # max generations (-n); whichever of time/iters hits first wins
 TGI_WAIT=60               # seconds to wait for the TGI server to become ready (-w)
 SYNTH_RESUME="${SYNTH_RESUME:-0}"  # 1 = resume evolution from the last completed gen (run: SYNTH_RESUME=1 ./run_elfuzz_rq1.sh)
@@ -72,11 +72,11 @@ stage() {
     echo "############################################################"
 }
 
-# stage "1/5 synth -- ${TARGET} on ${SUT}, ${SYNTH_TOTAL_TIME}s budget, small model"
-# SYNTH_RESUME_FLAG=()
-# [ "$SYNTH_RESUME" = "1" ] && SYNTH_RESUME_FLAG=(--resume)
-# "$ELFUZZ" synth -T "$TARGET" -n "$SYNTH_ITERATIONS" -tt "$SYNTH_TOTAL_TIME" \
-#     -w "$TGI_WAIT" --use-small-model "${SYNTH_RESUME_FLAG[@]}" "$SUT"
+stage "1/5 synth -- ${TARGET} on ${SUT}, ${SYNTH_TOTAL_TIME}s budget, small model"
+SYNTH_RESUME_FLAG=()
+[ "$SYNTH_RESUME" = "1" ] && SYNTH_RESUME_FLAG=(--resume)
+"$ELFUZZ" synth -T "$TARGET" -n "$SYNTH_ITERATIONS" -tt "$SYNTH_TOTAL_TIME" \
+    -w "$TGI_WAIT" --use-small-model "${SYNTH_RESUME_FLAG[@]}" "$SUT"
 
 stage "2/5 produce -- ${FUZZER} on ${SUT}, ${PRODUCE_TOTAL_TIME}s budget"
 "$ELFUZZ" produce -T "$FUZZER" -tt "$PRODUCE_TOTAL_TIME" "$SUT"

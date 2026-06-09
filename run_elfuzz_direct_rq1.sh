@@ -18,7 +18,7 @@ set -euo pipefail
 SUT="jsoncpp"             # jsoncpp | libxml2 | re2 | librsvg | cvc5 | sqlite3 | cpython3
 
 # --- direct: LLM directly synthesizes test inputs ---
-DIRECT_TOTAL_TIME=8050    # wall-clock budget in seconds (-tt)
+DIRECT_TOTAL_TIME=21660    # wall-clock budget in seconds (-tt)
 DIRECT_ITERATIONS=1000    # max iterations (-n); whichever of time/iters hits first wins
 TGI_WAIT=60               # seconds to wait for the TGI server to become ready (-w)
 USE_SMALL_MODEL=1         # 1 = Qwen2.5-Coder-1.5B (fits the 12GB GPU); 0 = CodeLlama-13b

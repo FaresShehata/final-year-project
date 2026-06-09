@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 from typing import BinaryIO
@@ -373,28 +374,52 @@ def generate_corpus(module_path, input_seeds: str, worker_dir, args):
     logger.debug(f"Running: {' '.join(cmd)}")
     input_seed_num = len(input_seeds.split(';'))
     result = None
+    # Per-module timeout. The original formula scales with seeds x iterations and
+    # can reach minutes-to-hours for some SUTs (cpython3 sets num_iterations=1000),
+    # so a single stuck generated module stalls the whole generation. Cap it so
+    # no module can hang the run; override with ELFUZZ_GENOUT_MODULE_TIMEOUT (s).
     try:
-        # if not args.driver.real_feedback:
-        timeout = 0.5 * args.driver.timeout * input_seed_num * args.driver.num_iterations * 0.5 # Kill the process if 50% of the generation cannot finished in 0.5 timeout
-        subprocess.run(cmd, check=True, text=True, timeout=timeout, capture_output=True)
-        # else:
-        #     subprocess.run(cmd, check=True, text=True, capture_output=True, timeout=210)
-    except subprocess.TimeoutExpired as e:
-        pass
-    except subprocess.CalledProcessError as e:
-        result = Result(
-            error = ExceptionInfo.from_exception(e, module_path),
-            data = ResultInfo(
-                time_taken=None,
-                memory_used=None,
-                stdout=e.stderr,
-                stderr=e.stdout,
-            ),
-            module_path = module_path,
-            result_type = GenResult.RunError,
-            function_name = args.driver.function_name,
-            args = args,
-        )
+        _cap = float(os.environ.get("ELFUZZ_GENOUT_MODULE_TIMEOUT", "120"))
+    except ValueError:
+        _cap = 120.0
+    timeout = 0.5 * args.driver.timeout * input_seed_num * args.driver.num_iterations * 0.5
+    timeout = max(1.0, min(timeout, _cap))
+    # Run the driver in its own session so anything the generated module forks is
+    # in our process group and can be killed as a group on timeout. With a plain
+    # subprocess.run timeout, only the direct child is killed -- stray
+    # grandchildren keep the stdout pipe open and hang us well past `timeout`
+    # (this is what froze the cpython3 run, where modules are arbitrary Python).
+    proc = subprocess.Popen(
+        cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    try:
+        out, err = proc.communicate(timeout=timeout)
+        if proc.returncode != 0:
+            e = subprocess.CalledProcessError(proc.returncode, cmd, output=out, stderr=err)
+            result = Result(
+                error = ExceptionInfo.from_exception(e, module_path),
+                data = ResultInfo(
+                    time_taken=None,
+                    memory_used=None,
+                    stdout=e.stderr,
+                    stderr=e.stdout,
+                ),
+                module_path = module_path,
+                result_type = GenResult.RunError,
+                function_name = args.driver.function_name,
+                args = args,
+            )
+    except subprocess.TimeoutExpired:
+        # Kill the whole process group (driver + anything it forked), then reap.
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
+        try:
+            proc.communicate(timeout=10)
+        except Exception:
+            proc.kill()
     # Remove the module from the output directory
     try:
         os.remove(copied_module_name)
