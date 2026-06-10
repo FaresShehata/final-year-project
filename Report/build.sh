@@ -43,14 +43,18 @@ case "${1:-build}" in
     build)
         if have latexmk; then
             # latexmk runs pdflatex/bibtex as many times as needed.
-            latexmk -pdf "${FLAGS[@]}" "$MAIN.tex"
+            # -silent hides the noisy output but keeps LaTeX/Latexmk warnings and errors.
+            latexmk -pdf -silent "${FLAGS[@]}" "$MAIN.tex"
         else
             # Manual fallback: pdflatex -> bibtex -> pdflatex x2 for references.
             echo "latexmk not found; using manual pdflatex/bibtex sequence." >&2
-            pdflatex "${FLAGS[@]}" "$MAIN.tex"
-            bibtex "$MAIN" || true   # tolerate first-run citation warnings
-            pdflatex "${FLAGS[@]}" "$MAIN.tex"
-            pdflatex "${FLAGS[@]}" "$MAIN.tex"
+            pdflatex "${FLAGS[@]}" "$MAIN.tex" > /dev/null
+            bibtex "$MAIN" > /dev/null || true   # tolerate first-run citation warnings
+            pdflatex "${FLAGS[@]}" "$MAIN.tex" > /dev/null
+            pdflatex "${FLAGS[@]}" "$MAIN.tex" > /dev/null
+            
+            # Print warnings and errors from the log
+            grep -iE "warning|error|undefined" "$MAIN.log" || true
         fi
         echo "Built $(pwd)/$MAIN.pdf"
         ;;
