@@ -1,0 +1,65 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": [
+                    { "id": 4, "children": [], "leaf": true }
+                  ],
+                  "meta": { "depth": 4, "path": [0, 1, 2, 3] }
+                }
+              ],
+              "siblings": { "left": null, "right": { "ref": "#/root/node/children/0/children/0/children/1" } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "mixedArray": [
+    1,
+    "two",
+    3.0,
+    true,
+    false,
+    null,
+    { "key": "value" },
+    [1, [2, [3, [4, [5]]]]],
+    { "nested": { "again": { "andAgain": { "terminal": [] } } } }
+  ],
+  "graph": {
+    "nodes": [
+      { "name": "a", "edges": ["b", "c"] },
+      { "name": "b", "edges": ["a", "c", "d"] },
+      { "name": "c", "edges": [] },
+      { "name": "d", "edges": ["a", "b", "c", "d"] }
+    ],
+    "adjacency": {
+      "a": { "b": 1, "c": 2 },
+      "b": { "a": 1, "c": 1, "d": 5 },
+      "c": {},
+      "d": { "a": 0, "b": 0, "c": 0, "d": 0 }
+    }
+  },
+  "emptyContainers": {
+    "obj": {},
+    "arr": [],
+    "arrOfEmpties": [{}, [], {}, []],
+    "objOfEmpties": { "x": {}, "y": [], "z": { "deep": {} } }
+  }
+}
