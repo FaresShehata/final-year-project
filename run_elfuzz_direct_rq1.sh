@@ -18,14 +18,14 @@ set -euo pipefail
 SUT="jsoncpp"             # jsoncpp | libxml2 | re2 | librsvg | cvc5 | sqlite3 | cpython3
 
 # --- direct: LLM directly synthesizes test inputs ---
-DIRECT_TOTAL_TIME=21660    # wall-clock budget in seconds (-tt)
+DIRECT_TOTAL_TIME=18000    # wall-clock budget in seconds (-tt)
 DIRECT_ITERATIONS=1000    # max iterations (-n); whichever of time/iters hits first wins
 TGI_WAIT=60               # seconds to wait for the TGI server to become ready (-w)
 USE_SMALL_MODEL=1         # 1 = Qwen2.5-Coder-1.5B (fits the 12GB GPU); 0 = CodeLlama-13b
 DIRECT_RESUME="${DIRECT_RESUME:-0}"  # 1 = resume from the last completed gen (run: DIRECT_RESUME=1 ./run_elfuzz_direct_rq1.sh)
 
 # --- run rq1.afl: AFL++ fuzzing campaign ---
-AFL_TIME=21660            # seconds per campaign (-t); the paper uses 86400 (24h)
+AFL_TIME=18060           # seconds per campaign (-t); the paper uses 86400 (24h)
 AFL_REPEAT=1              # repeats per fuzzer x benchmark (-r)
 AFL_PARALLEL=1            # parallel campaigns (-j)
 
