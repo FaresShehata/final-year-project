@@ -35,6 +35,26 @@
   },
 }
 
+%% TikZ libraries and shared styles for the project-chapter diagrams.
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,shapes.misc,fit,backgrounds,calc}
+\tikzset{
+  stage/.style={draw, rounded corners=3pt, fill=blue!8, align=center,
+                font=\small, minimum height=11mm, minimum width=20mm, inner sep=3pt},
+  gencode/.style={draw, rounded corners=3pt, fill=orange!12, align=left,
+                  font=\ttfamily\scriptsize, inner sep=5pt},
+  inputchip/.style={draw, rounded corners=1.5pt, fill=green!14, align=center,
+                    font=\ttfamily\scriptsize, minimum width=14mm, minimum height=5mm,
+                    inner sep=2pt},
+  flow/.style={-{Stealth[length=2.6mm,width=2.4mm]}, thick},
+  segkept/.style={draw, fill=blue!12, align=center, font=\ttfamily\scriptsize,
+                  minimum width=30mm, minimum height=6.5mm, inner sep=1pt},
+  segkepttwo/.style={draw, fill=teal!16, align=center, font=\ttfamily\scriptsize,
+                     minimum width=30mm, minimum height=6.5mm, inner sep=1pt},
+  segllm/.style={draw, fill=orange!28, align=center, font=\ttfamily\scriptsize,
+                 minimum width=30mm, minimum height=6.5mm, inner sep=1pt},
+  collbox/.style={draw, rounded corners=3pt, inner sep=3mm},
+}
+
 \newcommand{\lilspace}[1][0.5]{\vspace{#1\baselineskip}}
 
 % New paragraphs don't indent
@@ -42,6 +62,10 @@
 
 % Allow URLs to break anywhere for overflow
 \usepackage{xurl}
+
+% TODO: pick a final name for the tool and update it here. It is used
+% throughout this chapter via \toolname.
+\newcommand{\toolname}{ElFuzz-Direct}
 
 \title{LLM-Driven Seed Corpus Synthesis for Fuzzing}
 \author{Fares Shehata}

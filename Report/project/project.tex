@@ -1,49 +1,69 @@
-% TODO: pick a final name for the tool and update it here. It is used
-% throughout this chapter via \toolname.
-\newcommand{\toolname}{ElFuzz-Direct}
-
 \chapter{\toolname}
+\label{ch:project}
 
-We present \toolname, a modification of ELFuzz \cite{chen_2025_elfuzz} that uses the LLM to directly synthesise test inputs, rather than to synthesise the generation-based fuzzers that produce them. ELFuzz solves the hard problem of writing a good input generator by delegating it to an LLM and steering the search with coverage feedback over a so-called \textit{fuzzer space}. Our hypothesis is that the same machinery (LLM-driven mutation, coverage-based strength comparison, and elitist selection) can be applied one level lower, to the inputs themselves. The result is a coverage-guided, LLM-driven seed-corpus synthesiser: it produces a diverse, high-coverage set of seed inputs that can be used as a corpus in their own right or handed to a downstream mutation-based fuzzer such as AFL++ \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
-% why these citings 
+We present \toolname, a modification of ELFuzz \cite{chen_2025_elfuzz} that uses the LLM to directly synthesise test inputs, rather than to synthesise the generation-based fuzzers that produce them. ELFuzz solves the hard problem of writing a good input generator by delegating it to an LLM and steering the search with coverage feedback over a so-called \textit{fuzzer space}. Our hypothesis is that the same machinery (LLM-driven mutation, coverage-based strength comparison, and elitist selection) can be applied one level lower, to the inputs themselves. The result is a coverage-guided, LLM-driven seed-corpus synthesiser: it produces a diverse, high-coverage set of seed inputs that can be used as a corpus in their own right or handed to a downstream coverage-guided, mutation-based fuzzer such as AFL++ or libFuzzer~\cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
 
 This chapter describes the design and implementation of \toolname. The development of \toolname was in two major stages. The first stage was a direct replacement of a \textit{generator} with a \textit{collection} of inputs, to most closely preserve the structure of the original pipeline. After discovering issues with this design, the second stage removes collections entirely, and maintains a single evolving population of inputs, as this is a more natural implementation.
 
 \section{From Generators to Inputs}
 
-ELFuzz evolves a population of \textit{generators}: small programs (in the prototype, Python functions) that, when executed, emit a test input for the SUT. Evolution proceeds as an iterative loop in which each generation is mutated by the LLM, the mutants are assessed by the coverage they reach, and the strongest are retained as seeds for the next generation \cite{chen_2025_elfuzz}. A crucial property of this design is that the unit of evolution, a generator, is itself a \textit{source} of inputs: a single generator can be executed arbitrarily many times to produce an unbounded number of distinct inputs. Coverage of a generator is therefore measured by running it a fixed number of times and taking the union of the edges its outputs reach, approximating its \textit{cover set} $\mathcal{C}(F)$.
+ELFuzz evolves a population of \textit{generators}: small programs (in the prototype, Python functions) that, when executed, emit a test input for the SUT. Evolution proceeds as an iterative loop in which each generation is mutated by the LLM, the mutants are assessed by the coverage they reach, and the strongest are retained as seeds for the next generation \cite{chen_2025_elfuzz} (Figure~\ref{fig:elfuzz-pipeline}). A crucial property of this design is that the unit of evolution, a generator, is itself a \textit{source} of inputs: a single generator can be executed arbitrarily many times to produce an unbounded number of distinct inputs. Coverage of a generator is therefore measured by running it a fixed number of times and taking the union of the edges its outputs reach, approximating its \textit{cover set} $\mathcal{C}(F)$.
 
 \lilspace
-% DIAGRAM: the ELFuzz pipeline (reproduce / adapt Figures 2 and 3 from the
-% ELFuzz paper) -- naive seed fuzzer -> LLM-driven mutation -> fuzzer-space
-% exploration -> max-cover selection -> repeat.
 \begin{figure}[h]
     \centering
-    \vspace{6.5cm}
+    \begin{tikzpicture}[node distance=7mm and 10mm]
+        \node[stage, fill=orange!12] (seed) {Na\"ive seed\\fuzzer};
+        \node[stage, right=of seed] (mut) {LLM-driven\\mutation};
+        \node[stage, right=of mut] (cov) {Coverage\\assessment\\{\scriptsize(fuzzer space)}};
+        \node[stage, right=of cov] (sel) {Max-cover\\selection};
+        \node[stage, fill=green!14, right=of sel] (out) {Elite\\generators};
+        \draw[flow] (seed) -- (mut);
+        \draw[flow] (mut) -- node[below, font=\scriptsize] {mutants} (cov);
+        \draw[flow] (cov) -- node[below, font=\scriptsize] {cover sets} (sel);
+        \draw[flow] (sel) -- (out);
+        \draw[flow] (sel.north) .. controls +(0,9mm) and +(0,9mm) ..
+              node[above, font=\scriptsize] {next generation (seeds)} (mut.north);
+    \end{tikzpicture}
     \caption{The ELFuzz evolution loop, which \toolname{} adapts. Each iteration mutates the current generators with an LLM, places the mutants in the fuzzer space according to their cover sets, and selects a fixed number of elites that maximise the unioned coverage.}
     \label{fig:elfuzz-pipeline}
 \end{figure}
 
-Our project removes the generation step entirely. Instead of asking the LLM to write a program that emits an input, we ask it to emit the input. This eliminates a layer of indirection and the associated cost of executing generators to obtain their outputs. It also sidesteps the need for the LLM to produce syntactically valid \textit{code} in a fixed host language, as it only needs to produce content in the SUT's input format. It also raises an immediate design questionr: in ELFuzz, the unit of evolution is a generator, but a generator is not the same kind of object as an input. A generator stands in for a whole family of inputs, whereas a single input is just one point in the input space. The two designs that follow differ precisely in how they answer the question of what the unit of evolution should become once generators are removed.
+Our project removes the generation step entirely. Instead of asking the LLM to write a program that emits an input, we ask it to emit the input. This eliminates a layer of indirection and the associated cost of executing generators to obtain their outputs. It also sidesteps the need for the LLM to produce syntactically valid \textit{code} in a fixed host language, as it only needs to produce content in the SUT's input format. It also raises an immediate design question: in ELFuzz, the unit of evolution is a generator, but a generator is not the same kind of object as an input. A generator stands in for a whole family of inputs, whereas a single input is just one point in the input space. The two designs that follow differ precisely in how they answer the question of what the unit of evolution should become once generators are removed.
 
 \section{Stage One: Replacing Generators with Collections of Inputs}
 
 The most direct translation of ELFuzz would replace each generator with a single input and reuse the rest of the pipeline unchanged. However, this is not an equivalent design. A generator can produce an unbounded number of inputs, and therefore can reach many parts of the SUT. A single input exercises exactly one path through the SUT, so can only ever cover a small, fixed portion of it. Substituting one input for one generator would thus replace a rich object with a far weaker one, and the coverage-driven search would have far less to work with at each point in the population.
 
-To preserve the expressive power of the unit of evolution, our first design replaces each generator with a \textit{collection} of inputs. A collection plays the role that a generator played in ELFuzz: it is the object that is mutated, assessed, and selected. Its cover set is the union of the cover sets of its member inputs, so a collection of many diverse inputs can reach as much of the SUT as a capable generator, while remaining a concrete corpus of seeds rather than a program.
+To preserve the expressive power of the unit of evolution, our first design replaces each generator with a \textit{collection} of inputs. A collection plays the role that a generator played in ELFuzz: it is the object that is mutated, assessed, and selected. Its cover set is the union of the cover sets of its member inputs, so a collection of many diverse inputs can reach as much of the SUT as a capable generator, while remaining a concrete corpus of seeds rather than a program (Figure~\ref{fig:generator-to-collection}).
 
 \lilspace
-% DIAGRAM: one generator (a small program) being replaced by a collection /
-% box of several concrete inputs, whose unioned coverage stands in for the
-% generator's cover set.
 \begin{figure}[h]
     \centering
-    \vspace{6cm}
+    \begin{tikzpicture}[node distance=3mm]
+        \node[gencode] (gen)
+          {def gen(rng):\\ \ \ s = ""\\ \ \ while \ldots:\\ \ \ \ \ s += pick(rng)\\ \ \ return s};
+        \node[above=1.5mm of gen, font=\small] {Generator (a program)};
+
+        \node[inputchip, right=32mm of gen, yshift=14mm] (i1) {\{"a":1\}};
+        \node[inputchip, below=of i1] (i2) {[1,2,3]};
+        \node[inputchip, below=of i2] (i3) {"hello"};
+        \node[inputchip, below=of i3] (i4) {\{"k":[]\}};
+        \begin{scope}[on background layer]
+            \node[collbox, fill=green!6, fit=(i1)(i2)(i3)(i4)] (coll) {};
+        \end{scope}
+        \node[above=1.5mm of coll, font=\small] {Collection of inputs};
+
+        \draw[flow] (gen.east) -- node[above, font=\scriptsize] {replaced by} (coll.west);
+        \node[below=2mm of coll, font=\footnotesize]
+          {$\mathcal{C}(\text{collection}) = \bigcup_i \mathcal{C}(\text{input}_i)$};
+    \end{tikzpicture}
     \caption{Replacing a single generator with a collection of inputs. The collection's cover set is the union of its members' cover sets, so it preserves the role the generator played as the unit of evolution.}
     \label{fig:generator-to-collection}
 \end{figure}
 
 \subsection{Mutating individual inputs}
+\label{sec:mutation}
 
 We reuse ELFuzz's three LLM-driven mutation operators -- splicing, completion, and infilling -- but apply them to individual inputs rather than to generator source code. In ELFuzz these operators act on programs and are realised through fill-in-the-middle (FIM) queries to the model \cite{chen_2025_elfuzz}; here they act on the raw bytes of an input, cut at random line boundaries:
 
@@ -53,17 +73,42 @@ We reuse ELFuzz's three LLM-driven mutation operators -- splicing, completion, a
     \item \textbf{Splicing}: a prefix taken from one input and a suffix taken from another are joined, and the LLM produces glue content to fuse them into a single valid input. As in ELFuzz, splicing is the operator that combines the strengths of two parents.
 \end{itemize}
 
-These byte-level cuts are the input-space equivalents of ELFuzz's line-level cuts over generator code. Where the original implementation cuts and rejoins lines of a Python program, we cut and rejoin lines of, for example, a JSON document or an SQL script. The mutated input is always assembled from the preserved prefix and suffix plus the LLM-generated bridge, so that even when the model produces poor content the surrounding structure of the parent is retained.
+These byte-level edits are the input-space equivalents of ELFuzz's line-level edits over generator code. Where the original implementation cuts and rejoins lines of a Python program, we cut and rejoin lines of, for example, a JSON document or an SQL script. The mutated input is always assembled from the preserved prefix and suffix plus the LLM-generated bridge, so that even when the model produces poor content the surrounding structure of the parent is retained. Figure~\ref{fig:mutation-examples} illustrates the three operators on JSON inputs.
 
 \lilspace
-% DIAGRAM: worked examples of the three operators on JSON inputs -- show a
-% parent JSON document and the result of completion, infilling, and splicing
-% (two parents) respectively, highlighting the prefix/suffix kept and the
-% LLM-generated bridge.
 \begin{figure}[h]
     \centering
-    \vspace{7cm}
-    \caption{The three mutation operators applied to JSON inputs. Shaded regions are taken verbatim from the parent input(s); the remaining region is generated by the LLM to bridge the cut.}
+    \begin{tikzpicture}
+        % (a) Completion
+        \node[font=\small\bfseries] (hA) at (0,1.2) {(a) Completion};
+        \node[segkept, below=4mm of hA] (a1) {\{"user":"al",};
+        \node[segllm, below=0pt of a1] (a2) {\ "age":30\}};
+
+        % (b) Infilling
+        \node[font=\small\bfseries] (hB) at (5.2,1.2) {(b) Infilling};
+        \node[segkept, below=4mm of hB] (b1) {\{"a":1,};
+        \node[segllm, below=0pt of b1] (b2) {\ "b":2,};
+        \node[segkept, below=0pt of b2] (b3) {\ "c":3\}};
+
+        % (c) Splicing
+        \node[font=\small\bfseries] (hC) at (10.4,1.2) {(c) Splicing};
+        \node[segkept, below=4mm of hC] (c1) {\{"x":[1,};
+        \node[segllm, below=0pt of c1] (c2) {2],"y":};
+        \node[segkepttwo, below=0pt of c2] (c3) {true\}};
+
+        % side annotations
+        \node[right=1mm of a1, font=\scriptsize] {prefix};
+        \node[right=1mm of b2, font=\scriptsize] {hole};
+        \node[right=1mm of c1, font=\scriptsize] {from $e_1$};
+        \node[right=1mm of c3, font=\scriptsize] {from $e_2$};
+
+        % legend
+        \node[segkept, minimum width=7mm, minimum height=4mm] (lg1) at (1.1,-1.7) {};
+        \node[right=1mm of lg1, font=\scriptsize] {kept from parent input(s)};
+        \node[segllm, minimum width=7mm, minimum height=4mm, right=46mm of lg1] (lg2) {};
+        \node[right=1mm of lg2, font=\scriptsize] {generated by the LLM};
+    \end{tikzpicture}
+    \caption{The three mutation operators applied to JSON inputs. Shaded regions are taken verbatim from the parent input(s); the remaining region is generated by the LLM to bridge the cut. Splicing joins a prefix of one parent ($e_1$) to a suffix of another ($e_2$).}
     \label{fig:mutation-examples}
 \end{figure}
 
@@ -76,12 +121,13 @@ Because mutation continually produces new candidates, the population must be pru
 ranks collections by the subset relation between their cover sets, just as ELFuzz ranks generators. We retain the $N$ collections whose union of cover sets is largest and discard the rest, keeping the population at a fixed size while favouring elites that collectively expand coverage.
 
 \subsection{Limitations of the collection-based design}
+\label{sec:collection-limits}
 
 Although this design maps cleanly onto the ELFuzz pipeline, evolving collections rather than generators introduces two problems that do not arise when the unit of evolution is a true generator.
 
-\textit{The corpus cannot grow.} The population is a fixed number of collections, each holding a fixed number of inputs, so the total number of seeds is bounded throughout the run. With generators this bound is harmless, because each generator can produce an unbounded amount of inputs after evolution finishes. With collections the bound is real; the corpus can never contain more inputs than the initial configuration allows, regardless of how much new coverage the search discovers, and an input can only enter a collection by displacing another.
+\textbf{The corpus cannot grow.} The population is a fixed number of collections, each holding a fixed number of inputs, so the total number of seeds is bounded throughout the run. With generators this bound is harmless, because each generator can produce an unbounded amount of inputs after evolution finishes. With collections the bound is real; the corpus can never contain more inputs than the initial configuration allows, regardless of how much new coverage the search discovers, and an input can only enter a collection by displacing another.
 
-\textit{Elitism discards useful inputs.} The collections are disjoint, but coverage is a property of individual inputs, and useful inputs are scattered across collections. Suppose one collection contains an input that uniquely covers some region of the SUT, and a different collection contains an input that uniquely covers another, disjoint region. Max-cover selection chooses whole collections, so if only one of the two collections is retained as an elite, the valuable input in the other is discarded along with it. The unit of selection (a collection) is coarser than the unit that actually carries coverage (an input), so selecting elites loses information and discards genuine progress.
+\textbf{Elitism discards useful inputs.} The collections are disjoint, but coverage is a property of individual inputs, and useful inputs are scattered across collections. Suppose one collection contains an input that uniquely covers some region of the SUT, and a different collection contains an input that uniquely covers another, disjoint region. Max-cover selection chooses whole collections, so if only one of the two collections is retained as an elite, the valuable input in the other is discarded along with it. The unit of selection (a collection) is coarser than the unit that actually carries coverage (an input), so selecting elites loses information and discards genuine progress.
 
 \lilspace
 % RESULTS: space for preliminary results from the collection-based design,
@@ -96,44 +142,83 @@ Although this design maps cleanly onto the ELFuzz pipeline, evolving collections
 
 \section{Stage Two: Evolving a Single Population of Inputs}
 
-Both limitations above stem from the same root cause: coverage lives on individual inputs, but the collection-based design forces selection and accounting to operate on coarser groups. The second design removes the mismatch by making the input itself the unit of evolution. Rather than many disjoint, fixed-size collections, we maintain a single growing population - a \textit{pool} - of inputs, and every decision is made per input. This is both conceptually simpler and strictly more expressive than the collection-based design.
+Both limitations above stem from the same root cause: coverage lives on individual inputs, but the collection-based design forces selection and accounting to operate on coarser groups. The second design removes the mismatch by making the input itself the unit of evolution. Rather than many disjoint, fixed-size collections, we maintain a single growing population - a \textit{pool} - of inputs, and every decision is made per input (Figure~\ref{fig:collections-to-pool}). This is both conceptually simpler and strictly more expressive than the collection-based design.
 
 \lilspace
-% DIAGRAM: contrast the two designs -- on the left, several disjoint fixed-size
-% collections (with valuable inputs trapped in non-elite collections); on the
-% right, a single growing pool into which every useful input is admitted.
 \begin{figure}[h]
     \centering
-    \vspace{6.5cm}
-    \caption{From many disjoint collections (left) to a single growing pool (right). Treating the input as the unit of evolution lets every input that contributes coverage survive, and lets the corpus grow without a fixed bound.}
+    \begin{tikzpicture}[node distance=2mm]
+        % --- left: three disjoint, fixed-size collections ---
+        \node[inputchip] (a1) at (0,2.0) {$e_1$};
+        \node[inputchip, right=of a1] (a2) {$e_2$};
+        \node[inputchip] (b1) at (0,0.55) {$e_3$};
+        \node[inputchip, right=of b1] (b2) {$e_4$};
+        \node[inputchip] (c1) at (0,-0.9) {$e_5$};
+        \node[inputchip, right=of c1, draw=red, thick, fill=red!12] (c2) {$e_\star$};
+        \begin{scope}[on background layer]
+            \node[collbox, fill=green!8, fit=(a1)(a2)] (C1) {};
+            \node[collbox, fill=green!8, fit=(b1)(b2)] (C2) {};
+            \node[collbox, fill=gray!18, fit=(c1)(c2)] (C3) {};
+        \end{scope}
+        \node[right=1mm of C1, font=\scriptsize] {elite};
+        \node[right=1mm of C2, font=\scriptsize] {elite};
+        \node[right=1mm of C3, font=\scriptsize, text=red!70!black, align=left]
+          {non-elite:\\discarded};
+        \node[above=1mm of C1, font=\small] {Disjoint collections};
+
+        % --- right: one growing pool ---
+        \node[inputchip] (p1) at (8,2.0) {$e_1$};
+        \node[inputchip, right=of p1] (p2) {$e_2$};
+        \node[inputchip, below=of p1] (p3) {$e_3$};
+        \node[inputchip, right=of p3] (p4) {$e_4$};
+        \node[inputchip, below=of p3] (p5) {$e_5$};
+        \node[inputchip, right=of p5, draw=red, thick, fill=red!12] (pr) {$e_\star$};
+        \begin{scope}[on background layer]
+            \node[collbox, fill=blue!6, fit=(p1)(p2)(p3)(p4)(p5)(pr)] (P) {};
+        \end{scope}
+        \node[above=1mm of P, font=\small] {Single growing pool};
+
+        \draw[flow] (C2.east) ++(0.7,0) -- node[above, font=\scriptsize, align=center]
+              {input as the\\unit of evolution} ($(P.west)+(-0.1,0)$);
+    \end{tikzpicture}
+    \caption{From many disjoint collections (left) to a single growing pool (right). On the left, the uniquely valuable input $e_\star$ is trapped in a non-elite collection and discarded with it; on the right it survives. Treating the input as the unit of evolution lets every input that contributes coverage survive, and lets the corpus grow without a fixed bound.}
     \label{fig:collections-to-pool}
 \end{figure}
 
 \subsection{Initialising the pool}
+\label{sec:init}
 
 The evolution loop needs an initial pool to mutate. ELFuzz begins its own evolution from a single \textit{generic generator}: a naive seed fuzzer that emits purely random bytes. It relies on LLM-driven evolution to gradually turn that noise into a structured generator. The paper notes that stronger initial templates could improve convergence \cite{chen_2025_elfuzz}. Our first design followed the same spirit at the input level: the local LLM was queried to produce the entire starting population from scratch, each input generated independently from a short prompt naming only the target format.
 
 In practice this proved a poor fit for the code-completion models used in the evolution loop. Such models are trained to \textit{continue} existing text or code given substantial surrounding context. When prompted to produce a complete, well-formed input of a given format from a one-line description, they frequently returned empty, truncated, or malformed outputs that the SUT rejected outright and contributed no coverage. A from-scratch prompt gives the model too little to anchor on, and a small local model has weak priors for emitting a valid document of an arbitrary format unprompted.
 
-An intermediate design seeded the pool from a \textit{seed corpus} of real example inputs -- small, publicly available samples such as JSON documents, XML files, or SQL scripts -- so that the population began as a set of guaranteed in-format, coverage-bearing inputs. Where the local LLM was still used to generate further inputs it was primed with a few corpus examples (few-shot prompting) so it imitated real structure rather than inventing one from nothing. This improved the quality of the initial pool, but introduced a dependency on the availability of a suitable corpus for each target format, and the diversity of the starting population remained limited by whatever the corpus happened to contain.
+An intermediate design seeded the pool from a \textit{seed corpus} of real example inputs: small, publicly available samples such as JSON documents, XML files, or SQL scripts. This was so that the population began as a set of guaranteed in-format, coverage-bearing inputs. Where the local LLM was still used to generate further inputs it was primed with a few corpus examples (few-shot prompting) so it imitated real structure rather than inventing one from nothing. This improved the quality of the initial pool, but introduced a dependency on the availability of a suitable corpus for each target format, and the diversity of the starting population remained limited by whatever the corpus happened to contain. Also, the coverage achieved by the initial corpus was effectively free, meaning evaluating our approach against ELFuzz, which does not have this initial coverage advantage, would be unfair.
 
-The final design replaces the real-world corpus with a small set of inputs \textit{pre-generated} by a different, more capable model: Claude Opus 4.8 \cite{anthropic_2025_claude}. Before evolution begins, the powerful model is prompted to produce a fixed number of inputs that are each semantically and structurally distinct from one another. This closely mirrors how ELFuzz initialises its own search: just as ELFuzz provides a single Generic generator as the shared base from which all generators evolve, our pre-generated inputs serve as the fixed starting population from which all subsequent mutations depart. The key difference is that our starting population already contains real, diverse instances of the target format rather than a trivially random baseline.
+The final design replaces the real-world corpus with a small set of inputs \textit{pre-generated} by a different, more capable model: Claude Opus 4.8 \cite{anthropic_2025_claude}. The model is given a single instruction naming the target format and asking for a fixed number of inputs that are each semantically and structurally distinct from one another:
 
-The division of labour between the two models is deliberate. The local code-completion models used in the evolution loop excel at extending and recombining existing text -- exactly what the mutation operators require -- but are ill-suited to generating varied, semantically interesting documents from scratch, a task that demands a strong prior over the target format and the capacity to produce meaningfully different examples on each call. A large frontier model such as Claude Opus 4.8, prompted to generate $k$ inputs that are each semantically distinct from one another, reliably produces a diverse, well-formed starting population. Because this pre-generation step is performed once per target and its outputs are stored, the cost is paid only at setup time and does not recur across the evolution loop.
+% TODO: paste the verbatim pre-generation prompt into the quotation below.
+\begin{quote}
+\itshape Please generate five long semantically varied Python programs that utilize many features of the language. These inputs shall serve as a seed corpus for a fuzzing procedure that evolves these inputs. The programs do not need to perform any meaningful function, but they should exercise the scope of the language.
+\end{quote}
+
+Before evolution begins, the powerful model was prompted to produce a fixed number of inputs that are each semantically and structurally distinct from one another. This closely mirrors how ELFuzz initialises its own search: just as ELFuzz provides a single Generic generator as the shared base from which all generators evolve, our pre-generated inputs serve as the fixed starting population from which all subsequent mutations depart.
+
+The split between two different models is deliberate. The local code-completion models used in the evolution loop excel at extending and recombining existing text, exactly what the mutation operators require. However, they are not well suited for generating varied, semantically interesting documents from scratch, a task that demands a strong prior over the target format and the capacity to produce meaningfully different examples on each call. A large frontier model such as Claude Opus 4.8, prompted to generate $k$ inputs that are each semantically distinct from one another, reliably produces a diverse, well-formed starting population. Because this pre-generation step is performed once per target and its outputs are stored, the cost is paid only at setup time and does not recur across the evolution loop.
 
 \subsection{The evolution loop}
 
-The evolution loop mirrors ELFuzz's three stages, but operates on inputs. The pool begins with the pre-generated inputs described in , after which each generation performs three steps:
+The evolution loop mirrors ELFuzz's three stages, but operates on inputs. The pool begins with the pre-generated inputs described in Section~\ref{sec:init}, after which each generation performs three steps:
 
 \begin{enumerate}
-    \item \textbf{Mutation.} A batch of candidate inputs is produced by repeatedly drawing one (or, for splicing, two) inputs at random from the pool and applying one of the three mutation operators described in .
+    \item \textbf{Mutation.} A batch of candidate inputs is produced by repeatedly drawing one (or, for splicing, two) inputs at random from the pool and applying one of the three mutation operators described in Section~\ref{sec:mutation}.
     \item \textbf{Coverage assessment.} Each candidate is executed on the SUT and its cover set -- the set of edges it reaches -- is recorded.
     \item \textbf{Curation.} Each candidate is compared against the current pool and either added, used to replace an inferior input, or discarded, according to the decision rule below.
 \end{enumerate}
 
 \subsection{Curating the pool}
+\label{sec:curation}
 
-Curation is where the strength pre-order of the fuzzer space is enforced at the level of individual inputs. We say an input with cover set $e_1$ is \textit{superior} to one with cover set $e_2$ when it strictly dominates it -- that is, when $e_2 \subset e_1$ -- which is the input-level instance of ELFuzz's relation $\mathcal{S}(F_i) \sqsubset \mathcal{S}(F_j) \iff \mathcal{C}(F_i) \subset \mathcal{C}(F_j)$. Letting $U$ denote the union of the cover sets of all inputs currently in the pool, each candidate with cover set $e$ is handled as follows:
+Curation is where the strength pre-order of the fuzzer space is enforced at the level of individual inputs. We say an input with cover set $e_1$ is \textit{superior} to one with cover set $e_2$ when it strictly dominates it: $e_2 \subset e_1$. This is the input-level instance of ELFuzz's relation $\mathcal{S}(F_i) \sqsubset \mathcal{S}(F_j) \iff \mathcal{C}(F_i) \subset \mathcal{C}(F_j)$. Letting $U$ denote the union of the cover sets of all inputs currently in the pool, each candidate with cover set $e$ is handled as follows:
 
 \begin{itemize}
     \item If the candidate covers edges not yet in the pool ($e \setminus U \neq \emptyset$), it is added to the pool. Any existing input that the new one strictly dominates is then evicted, since its coverage is now redundant.
@@ -141,28 +226,28 @@ Curation is where the strength pre-order of the fuzzer space is enforced at the 
     \item Otherwise the candidate is redundant with respect to the pool and is discarded.
 \end{itemize}
 
-A candidate that reaches no edges at all -- for example, a malformed input the SUT rejects immediately -- is always discarded. We additionally break ties by input size: when a candidate covers exactly the same edges as an existing input but is smaller, it replaces it. This is a deliberate departure from ELFuzz, whose selection rewards coverage with no size penalty; for a \textit{seed corpus}, smaller inputs that achieve the same coverage are preferable, because they mutate and execute more cheaply in a downstream fuzzer.
+A candidate that reaches no edges at all - for example, a malformed input the SUT rejects immediately - is always discarded. We additionally break ties by input size: when a candidate covers exactly the same edges as an existing input but is smaller, it replaces it. This is a deliberate departure from ELFuzz, whose selection rewards coverage with no size penalty; for a \textit{seed corpus}, smaller inputs that achieve the same coverage are preferable, because they mutate and execute more cheaply in a downstream fuzzer.
 
-The effect of this rule is that the pool always retains the union of all coverage discovered so far while continuously pruning inputs whose coverage is subsumed by others. It approximates a Pareto frontier of inputs under the coverage-subset relation, refined by the size penalty -- analogous to the max-cover elites of ELFuzz, but maintained incrementally and without a fixed cap on its size.
+The effect of this rule is that the pool always retains the union of all coverage discovered so far while continuously pruning inputs whose coverage is achieved by others. It approximates a Pareto frontier of inputs under the coverage-subset relation, refined by the size penalty, analogous to the max-cover elites of ELFuzz, but it is maintained incrementally and without a fixed cap on its size.
 
 \subsection{Properties}
+\label{sec:population}
 
-This design resolves both limitations of . Because selection now operates on the same unit that carries coverage, \textit{no progress is lost}: two inputs with disjoint coverage both survive, as each contributes edges the other lacks, where under collection-based elitism one of them might have been discarded with its non-elite collection. And because the pool is a single set with no fixed capacity, the corpus is no longer capped by an initial configuration; it admits every input that contributes new coverage.
+This design resolves both limitations of Section~\ref{sec:collection-limits}. Because selection now operates on the same unit that carries coverage, no progress is lost. Two inputs with disjoint coverage both survive, as each contributes edges the other lacks. Additionally, because the pool is a single set with no fixed capacity, the corpus is no longer capped by an initial configuration; it admits every input that contributes new coverage.
 
-It is worth being precise about how the pool changes over time, because its size is not monotonic. When a candidate introduces new edges it is added, but it may simultaneously dominate -- strictly subsume the cover sets of -- several existing inputs at once, all of which are then evicted. The net effect can be a \textit{smaller} pool than before the candidate arrived. Crucially, however, eviction only ever removes an input whose coverage is wholly contained in that of a retained input, so the union of cover sets -- the total coverage held by the pool -- never decreases. Overall coverage is therefore monotonically non-decreasing across generations, even though the population size is not. The pool tends to \textit{consolidate}: as the search discovers individual inputs that each cover what previously took several, the corpus can become both smaller and stronger, with the size tie-break of  reinforcing the same trend. This is exactly the behaviour we want from a seed corpus, where fewer, higher-coverage seeds make for a more efficient downstream fuzzing campaign.
+One consequence of our design is that the size of the pool does not necessarily increase monotonically. When a candidate introduces new edges, it is added. But, it may simultaneously dominate several existing inputs at once, all of which are then evicted. The net effect can be a smaller pool than before the candidate arrived. Crucially, however, eviction only ever removes an input whose coverage is wholly contained in that of a retained input, so the union of cover sets (the total coverage held by the pool) never decreases. Overall coverage is therefore monotonically non-decreasing across generations, even though the population size is not. As the search discovers individual inputs that each cover what previously took several, the corpus can become both smaller and stronger, with the size tie-break of Section~\ref{sec:curation} reinforcing the same trend. This is exactly the behaviour we want from a seed corpus, where fewer, higher-coverage seeds make for a more efficient downstream fuzzing campaign.
 
 \section{Implementation}
 
 \toolname{} is implemented as an additional \textit{direct} mode within the existing ELFuzz codebase, reusing its configuration, coverage tooling, and LLM-serving infrastructure wherever possible. The pipeline is driven by two shell scripts that orchestrate a small number of Python components.
 
 \lilspace
-\textit{Orchestration.} An outer script bootstraps the initial pool from the pre-generated inputs () -- placing them into the pool, computing their coverage, and retaining those that cover any edges -- and then runs the per-generation loop for a configured number of generations or until an optional wall-clock budget is exhausted. Each generation is handled by an inner script that performs the three steps of : mutation, coverage assessment, and curation. To reuse the existing per-generator coverage tooling unchanged, each candidate input is written into its own directory so that the tooling treats it as an independent unit and reports its coverage separately.
+\textbf{Orchestration.} An outer script bootstraps the initial pool from the pre-generated inputs, placing them into the pool, computing their coverage, and retaining those that cover any edges. Then, it runs the per-generation loop for a configured number of generations, or until an optional wall-clock budget is exhausted. Each generation is handled by an inner script that performs the three steps of mutation, coverage assessment, and curation. To reuse the existing per-generator coverage tooling unchanged, each candidate input is written into its own directory so that the tooling treats it as an independent unit and reports its coverage separately.
 
 \lilspace
-\textit{Initialisation and mutation.} Initialisation is handled by a component that reads the inputs pre-generated by Claude Opus 4.8 and places them into the pool, with each candidate assessed for coverage and discarded if it reaches no edges. Mutants are produced by a second component that draws inputs from the pool and applies the completion, infilling, and splicing operators; the choice of operator per candidate is random over the enabled set, and any operator can be disabled to support ablation studies. To prevent prompts from growing without bound across generations -- each generation's outputs become the next generation's parents, so na\"ively concatenated prefixes and suffixes would compound -- the text fed to the model for each operator is capped at a fixed size, snapped to a line boundary, while the full parent text is still used to assemble the written candidate.
+\textbf{Initialisation and mutation.} Initialisation is handled by a component that reads the inputs pre-generated by Claude Opus 4.8 and places them into the pool, with each candidate assessed for coverage and discarded if it reaches no edges. Mutants are produced by a second component that draws inputs from the pool and applies the completion, infilling, and splicing operators; the choice of operator per candidate is random over the enabled set, and any operator can be disabled to support ablation studies. 
+
+Inputs tend to grow over successive generations: completion appends new content, and each generation's outputs become the next generation's parents, so left unchecked the parent text handed to the model would expand without bound. To keep every query bounded, the parent text fed to the model for an operator is truncated to a fixed size, snapped to the nearest line boundary. This truncation affects only the model's view; the full, untruncated parent is still used when assembling the final candidate, so the input itself is never clipped.
 
 \lilspace
-\textit{LLM backends.} The implementation is model-agnostic and supports two backends. The first serves a local open-weights model through a HuggingFace Text Generation Inference server and uses the model's native fill-in-the-middle tokens for the infilling and splicing operators, reusing the same FIM machinery as ELFuzz's generator mutation. The second targets a hosted API model and instead drives the operators with natural-language instructions, post-processing the response to strip markdown fences and other extraneous formatting. Supporting both lets us compare a small local model against a larger hosted one, as set out in the project goals.
-
-\lilspace
-\textit{Curation.} The decision rule of  is implemented by a curator that ingests the per-candidate coverage map and the current pool index, applies the add/replace/discard rule to each candidate, and writes the updated pool together with a record of every candidate's fate. The pool is stored as a flat directory of inputs alongside an index mapping each input to its cover set and size, so that the union $U$ and the domination checks can be evaluated efficiently each generation.
+\textbf{Curation.} The decision rule mentioned above is implemented by a curator that ingests the per-candidate coverage map and the current pool index, applies the add/replace/discard rule to each candidate, and writes the updated pool together with a record of the action taken for each candidate. The pool is stored as a flat directory of inputs alongside an index mapping each input to its cover set and size, so that the union $U$ and the domination checks can be evaluated efficiently each generation.

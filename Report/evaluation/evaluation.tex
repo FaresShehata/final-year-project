@@ -9,30 +9,33 @@
 % is collected, and new SUT/tool runs appear automatically once their CSVs
 % are produced by data/extract_results.py -- no edits to this file needed.
 % =====================================================================
+% Optional first arg (#1) injects extra axis options, e.g. [xmax=0.4] to
+% truncate a panel; the six positional args are <sut> <suffix> <xcol> <ycol>
+% <xlabel> <ylabel> as before.
 \newif\ifhascsv
-\newcommand{\covtimeseries}[6]{%
+\newcommand{\covtimeseries}[7][]{%
   \hascsvfalse
-  \IfFileExists{data/#1/synth_#2.csv}{\hascsvtrue}{}%
-  \IfFileExists{data/#1/direct_#2.csv}{\hascsvtrue}{}%
+  \IfFileExists{data/#2/synth_#3.csv}{\hascsvtrue}{}%
+  \IfFileExists{data/#2/direct_#3.csv}{\hascsvtrue}{}%
   \ifhascsv
     \begin{tikzpicture}
-      \begin{axis}[evalplot, xlabel={#5}, ylabel={#6}]
-        \IfFileExists{data/#1/synth_#2.csv}{%
-          \addplot table [col sep=comma, x=#3, y=#4] {data/#1/synth_#2.csv};
+      \begin{axis}[evalplot, xlabel={#6}, ylabel={#7}, #1]
+        \IfFileExists{data/#2/synth_#3.csv}{%
+          \addplot table [col sep=comma, x=#4, y=#5] {data/#2/synth_#3.csv};
           \addlegendentry{elfuzz synth}}{}%
-        \IfFileExists{data/#1/direct_#2.csv}{%
-          \addplot table [col sep=comma, x=#3, y=#4] {data/#1/direct_#2.csv};
+        \IfFileExists{data/#2/direct_#3.csv}{%
+          \addplot table [col sep=comma, x=#4, y=#5] {data/#2/direct_#3.csv};
           \addlegendentry{elfuzz direct}}{}%
       \end{axis}
     \end{tikzpicture}%
   \else
-    \fbox{\parbox{0.7\linewidth}{\centering\vspace{2cm}\textit{Data pending for #1.}\vspace{2cm}}}%
+    \fbox{\parbox{0.7\linewidth}{\centering\vspace{2cm}\textit{Data pending for #2.}\vspace{2cm}}}%
   \fi
 }
 
-The aim of this project is to test a single hypothesis. ELFuzz produces seed inputs \textit{indirectly}: it uses an LLM to synthesise generation-based fuzzers, and those fuzzers are then run to emit the inputs \cite{chen_2025_elfuzz}. \toolname{} removes the intermediate program and asks the LLM for the inputs directly. Our conjecture is that this is a \textbf{more direct route to diverse, semantically interesting inputs}, and therefore to \textbf{more varied coverage of the system under test (SUT)} -- which is ultimately what a fuzzing campaign is trying to achieve. By eliminating the generator, the model's knowledge of the input format is spent on the inputs themselves rather than on writing a program that happens to produce them, and coverage feedback selects directly over the objects we care about.
+The aim of this project is to test the hypothesis laid out in the introduction (Section~\ref{sec:intro}). ELFuzz produces seed inputs \textit{indirectly}: it uses an LLM to synthesise generation-based fuzzers, and those fuzzers are then run to emit the inputs \cite{chen_2025_elfuzz}. \toolname{} removes the intermediate program and asks the LLM for the inputs directly. Our hypothesis is that this is a more direct route to diverse, semantically interesting inputs, and therefore to more varied coverage of the system under test (SUT) -- which is ultimately what a fuzzing campaign is trying to achieve. By eliminating the generator, the model's knowledge of the input format is spent on the inputs themselves rather than on writing a program that happens to produce them, and coverage feedback selects directly over the objects we care about.
 
-This chapter sets out how we test that hypothesis. The whole evaluation is framed as a like-for-like comparison between \textbf{\texttt{elfuzz synth}} (the original, generator-synthesising pipeline) and \textbf{\texttt{elfuzz direct}} (our input-generating modification), run under identical models, hardware, and time budgets. We describe the research questions (Section~\ref{sec:eval-rqs}), the experimental setup and protocol (Section~\ref{sec:eval-setup}), and the metrics and result tables/figures that will carry the comparison (Section~\ref{sec:eval-results}). Quantitative analysis and discussion are deferred until the full set of runs has completed.
+This chapter sets out how we tested that hypothesis. The whole evaluation is framed as a direct comparison between original ELFuzz and \toolname{}, run under identical models, hardware, and time budgets. We describe the research questions (Section~\ref{sec:eval-rqs}), the experimental setup and protocol (Section~\ref{sec:eval-setup}), and the results and their analysis (Section~\ref{sec:eval-results}). The evaluation so far covers two of the seven ELFuzz SUTs, \texttt{jsoncpp} and \texttt{cpython3}; these were chosen because they sit at opposite ends of a complexity scale, which proves central to interpreting the results.
 
 \section{Aims and Research Questions}
 \label{sec:eval-rqs}
@@ -43,12 +46,11 @@ We restate the central hypothesis as the lens through which every result is read
 \textit{Generating inputs directly with an LLM yields a more diverse, more semantically interesting seed corpus -- and hence more varied SUT coverage -- than synthesising fuzzers that generate those inputs.}
 \end{quote}
 
-We decompose this into three research questions. The numbering mirrors ELFuzz's own evaluation, where RQ1 concerns input-generation effectiveness and RQ2 concerns downstream bug-finding \cite{chen_2025_elfuzz}.
+We decompose this into two research questions. The numbering mirrors ELFuzz's own evaluation, where RQ1 concerns input-generation effectiveness and RQ2 concerns downstream bug-finding \cite{chen_2025_elfuzz}.
 
 \begin{itemize}
     \item \textbf{RQ1 (seed quality).} How much SUT coverage does each tool's seed corpus achieve \textit{on its own}, before any mutation fuzzing? This measures the raw quality of what each approach produces, and is the most direct test of the hypothesis: if directly generated inputs are more varied, they should cover more of the SUT.
     \item \textbf{RQ2 (downstream fuzzing).} When the seed corpus is used to bootstrap a grey-box mutation fuzzer (AFL++ \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}), how does coverage grow over the campaign, and where does it end? A more diverse corpus should let the fuzzer past shallow checks sooner and reach a higher plateau.
-    \item \textbf{RQ3 (search behaviour).} How does coverage evolve \textit{during} synthesis versus during pool evolution, and how does the corpus size behave -- in particular, does \toolname{} exhibit the consolidation behaviour predicted in Section~\ref{sec:population}, where the pool can shrink while coverage only increases?
 \end{itemize}
 
 \section{Experimental Setup}
@@ -56,29 +58,29 @@ We decompose this into three research questions. The numbering mirrors ELFuzz's 
 
 \subsection{Systems under test}
 
-We evaluate on a subset of the seven real-world SUTs used by ELFuzz, spanning structured data formats and language interpreters \cite{chen_2025_elfuzz}. Table~\ref{tab:suts} lists them with their input format and approximate size; the SUTs exercise a range of input complexities, from a JSON parser to an SMT solver.
+We evaluate on a subset of the seven real-world SUTs used by ELFuzz, spanning structured data formats and language interpreters \cite{chen_2025_elfuzz}. Table~\ref{tab:suts} lists the two SUTs evaluated so far with their input format and the size of their AFL++ coverage map. We deliberately chose targets at opposite ends of the complexity range: \texttt{jsoncpp}, a small JSON parser, and \texttt{cpython3}, the full CPython interpreter, which is roughly $25\times$ larger by instrumented edges.
 
 \begin{table}[h]
     \centering
     \begin{tabular}{llr}
         \toprule
-        \textbf{SUT} & \textbf{Input format} & \textbf{Approx.\ size (LoC)} \\
+        \textbf{SUT} & \textbf{Input format} & \textbf{Instrumented edges} \\
         \midrule
-        jsoncpp   & JSON              & 25\,k \\
-        % Uncomment / edit rows as runs complete:
-        % libxml2 & XML               & 230\,k \\
-        % re2     & Regular expression & 30\,k \\
-        % sqlite3 & SQL               & 350\,k \\
-        % cvc5    & SMT-LIB 2         & 600\,k \\
+        jsoncpp   & JSON   & 5{,}236 \\
+        cpython3  & Python & 133{,}395 \\
+        % libxml2 & XML    & --- \\
+        % re2     & Regular expression & --- \\
+        % sqlite3 & SQL    & --- \\
+        % cvc5    & SMT-LIB 2 & --- \\
         \bottomrule
     \end{tabular}
-    \caption{Systems under test evaluated in this project (a subset of the seven ELFuzz SUTs). Sizes are approximate.}
+    \caption{The systems under test evaluated so far (a subset of the seven ELFuzz SUTs). ``Instrumented edges'' is the size of the AFL++ coverage map (the total reachable edges of the target), used here as a direct measure of complexity.}
     \label{tab:suts}
 \end{table}
 
 \subsection{Configurations compared}
 
-The two configurations are \texttt{elfuzz synth} and \texttt{elfuzz direct}. To isolate the effect of the design difference, every other factor is held fixed: both use the same code-completion LLM (Qwen2.5-Coder-1.5B, the small local model chosen to fit the available GPU), run on the same single-workstation host, and are given identical time budgets. Both pipelines end by feeding their seed corpus to the same AFL++ configuration, so any downstream difference is attributable to the seeds rather than to the fuzzer.
+The two configurations are \texttt{elfuzz synth} and \texttt{elfuzz direct}. To isolate the effect of the design difference, every other factor is held fixed: both use the same code-completion LLM (Qwen2.5-Coder-1.5B, the small local model chosen to fit the available GPU) for their evolution loop, run on the same single-workstation host, and are given identical time budgets. As described in Chapter~\ref{ch:project}, \texttt{direct} additionally seeds its initial pool from a small, fixed set of inputs pre-generated by a more capable model; this one-off seeding aside, the loop that does the work is the same small local model for both. Both pipelines end by feeding their seed corpus to the same AFL++ configuration, so any downstream difference is attributable to the seeds rather than to the fuzzer.
 
 \subsection{Protocol}
 \label{sec:eval-protocol}
@@ -92,8 +94,6 @@ Each SUT is run end-to-end through the same four-stage pipeline for both tools:
     \item \textbf{AFL++ campaign (6\,h, RQ2).} The minimised corpus seeds a 6-hour AFL++ campaign (one repetition in the current runs), and coverage is logged over time.
 \end{enumerate}
 
-\textbf{Instrumentation caveat.} The coverage counts produced during synthesis/evolution and the \texttt{edges\_found} reported by AFL++ come from different instrumentation, so the two phases are \textit{not} directly comparable in absolute terms. We therefore only ever compare \texttt{synth} against \texttt{direct} \textit{within} a single metric, never across the synthesis and AFL phases.
-
 \subsection{Metrics}
 
 \begin{itemize}
@@ -101,20 +101,19 @@ Each SUT is run end-to-end through the same four-stage pipeline for both tools:
     \item \textbf{AFL coverage over time} -- \texttt{edges\_found} as a function of wall-clock time, and the final value at 6\,h (RQ2).
     \item \textbf{Bitmap coverage} -- AFL's percentage of the coverage bitmap exercised, at end of campaign.
     \item \textbf{Throughput} -- total executions and executions per second, as a sanity check that campaigns are comparable.
-    \item \textbf{Corpus size} -- number of seeds, and (for \texttt{direct}) the pool size across generations, to evidence the consolidation behaviour (RQ3).
-    \item \textbf{Evolution coverage} -- union of edges covered by the whole population/pool per generation, during synthesis (RQ3).
+    \item \textbf{Corpus size} -- number of seeds in the minimised corpus.
     \item \textbf{Crashes and hangs} -- saved crashing and hanging inputs found by the campaign.
 \end{itemize}
 
 \section{Results}
 \label{sec:eval-results}
 
-This section presents the result tables and figures. Numbers are filled in as each SUT's runs complete; analysis and comparison are deferred until the full set is available.
+We report results for the two SUTs evaluated so far, \texttt{jsoncpp} and \texttt{cpython3}. As Table~\ref{tab:suts} shows, they bracket a wide range of target complexity, and that difference turns out to dominate the interpretation of every metric below.
 
 \subsection{Seed coverage (RQ1)}
 \label{sec:eval-rq1}
 
-Table~\ref{tab:seedcov} reports the coverage achieved by each tool's minimised seed corpus on its own. This is the most direct measurement of seed quality.
+Table~\ref{tab:seedcov} reports the coverage achieved by each tool's minimised seed corpus on its own, measured with \texttt{afl-showmap}. This is the most direct measurement of seed quality.
 
 \begin{table}[h]
     \centering
@@ -122,44 +121,32 @@ Table~\ref{tab:seedcov} reports the coverage achieved by each tool's minimised s
         \toprule
         \textbf{SUT} & \textbf{synth} & \textbf{direct} \\
         \midrule
-        jsoncpp & 568 & 463 \\
-        % libxml2 & --- & --- \\
-        % re2     & --- & --- \\
-        % sqlite3 & --- & --- \\
-        % cvc5    & --- & --- \\
+        jsoncpp  & 568    & 163   \\
+        cpython3 & 19{,}634 & 9{,}790 \\
         \bottomrule
     \end{tabular}
-    \caption{Seed-corpus coverage (edges covered by the minimised corpus, before any mutation fuzzing) for each tool. Higher is better. Values are pending for runs not yet completed.}
+    \caption{Seed-corpus coverage (edges covered by the minimised corpus, before any mutation fuzzing) for each tool, measured with \texttt{afl-showmap}. Higher is better.}
     \label{tab:seedcov}
 \end{table}
 
-% TODO: analysis once all SUT data collected.
-
-\subsection{Coverage during evolution (RQ3)}
-\label{sec:eval-rq3}
-
-Figure~\ref{fig:evolution} shows how the coverage of the whole population (for \texttt{synth}) or pool (for \texttt{direct}) grows over the generations of the 6-hour synthesis phase. These counts use the synthesis-phase instrumentation and so are comparable between the two tools, but not against the AFL figures below.
-
-\begin{figure}[h]
-    \centering
-    \covtimeseries{jsoncpp}{evolution}{gen_index}{union_edges}{Generation}{Edges covered (population/pool union)}
-    \caption{Coverage over the synthesis/evolution phase on jsoncpp: union of edges covered by the whole population (synth) or pool (direct), per generation.}
-    \label{fig:evolution}
-\end{figure}
-
-% TODO: analysis once all SUT data collected.
-% TODO (optional): companion figure of direct's pool size per generation to
-% evidence the consolidation property of Section~\ref{sec:population}.
+On both SUTs the generator-synthesising pipeline produces a higher-coverage seed corpus than direct input generation: \texttt{synth} leads by roughly $3.5\times$ on jsoncpp (568 vs 163 edges) and $2\times$ on cpython3 (19{,}634 vs 9{,}790). Part of this gap is structural rather than fundamental. \texttt{synth}'s \texttt{produce} step samples over a million inputs from its elite generators before minimisation, whereas \texttt{direct} starts from a small, fixed set of pre-generated inputs and grows a single coverage-curated pool from there (Chapter~\ref{ch:project}); that pool \textit{is} its corpus (116 inputs on jsoncpp, 1{,}264 on cpython3, the size set by how much the target rewards consolidation rather than by any fixed configuration). \texttt{synth} therefore simply has far more raw material from which to retain broad coverage. At the seed level, then, the directness hypothesis is not borne out: the extra indirection of synthesising a generator yields \textit{more} coverage per corpus, not less. Whether this seed-level advantage survives the downstream fuzzing campaign is the subject of RQ2.
 
 \subsection{Downstream AFL++ coverage (RQ2)}
 \label{sec:eval-rq2}
 
-Figure~\ref{fig:afl} shows AFL++ edge coverage over the 6-hour campaign for each tool's seed corpus, and Table~\ref{tab:aflstats} summarises the end-of-campaign statistics.
+Figure~\ref{fig:afl} shows AFL++ edge coverage over the campaign for each tool's seed corpus, and Table~\ref{tab:aflstats} the end-of-campaign statistics.
 
 \begin{figure}[h]
     \centering
-    \covtimeseries{jsoncpp}{afl}{time_h}{edges_found}{Time (hours)}{Edges found (AFL++)}
-    \caption{AFL++ coverage over time on jsoncpp, seeded with each tool's minimised corpus. Both campaigns run for 6\,hours under identical settings.}
+    \begin{minipage}[t]{0.49\linewidth}\centering
+        \covtimeseries[xmax=0.4]{jsoncpp}{afl}{time_h}{edges_found}{Time (hours)}{Edges found (AFL++)}\\[2pt]
+        {\small (a) jsoncpp}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.49\linewidth}\centering
+        \covtimeseries{cpython3}{afl}{time_h}{edges_found}{Time (hours)}{Edges found (AFL++)}\\[2pt]
+        {\small (b) cpython3}
+    \end{minipage}
+    \caption{AFL++ coverage over time, seeded with each tool's minimised corpus. Campaigns run for 6\,h. The jsoncpp panel is truncated to the point at which both tools reach the reachable frontier (the 667-edge ceiling, hit within the first $\sim$20 minutes and constant thereafter); the cpython3 panel shows the full 6\,h, where neither tool saturates.}
     \label{fig:afl}
 \end{figure}
 
@@ -171,19 +158,29 @@ Figure~\ref{fig:afl} shows AFL++ edge coverage over the 6-hour campaign for each
         \midrule
         \multirow{2}{*}{jsoncpp}
           & synth  & 667 & 12.74\% & 1311 & 166.9\,M & 0 \\
-          & direct & 667 & 12.74\% & 1223 & 156.6\,M & 0 \\
-        % \multirow{2}{*}{libxml2}
-        %   & synth  & --- & --- & --- & --- & --- \\
-        %   & direct & --- & --- & --- & --- & --- \\
+          & direct & 667 & 12.74\% & 1468 & 141.7\,M & 0 \\
+        \midrule
+        \multirow{2}{*}{cpython3}
+          & synth  & 24{,}277 & 18.20\% & 6043 & 3.31\,M & 0 \\
+          & direct & 22{,}523 & 16.88\% & 6636 & 3.33\,M & 0 \\
         \bottomrule
     \end{tabular}
-    \caption{End-of-campaign AFL++ statistics (6\,h, one repetition): edges found, bitmap coverage, final corpus size, total executions, and saved crashes. Values are pending for runs not yet completed.}
+    \caption{End-of-campaign AFL++ statistics (one repetition): edges found, bitmap coverage, final corpus size, total executions, and saved crashes. cpython3's far lower execution rate (millions of execs, vs hundreds of millions for jsoncpp) reflects how much heavier each interpreter run is.}
     \label{tab:aflstats}
 \end{table}
 
-% TODO: analysis once all SUT data collected.
+The two SUTs behave very differently. On jsoncpp the campaigns converge to the \textit{identical} final coverage -- 667 edges, 12.74\% of the map -- even though the \texttt{synth} seed corpus started out covering $3.5\times$ as many edges as the \texttt{direct} one. AFL++ saturates jsoncpp's reachable frontier within the first few minutes (both curves are flat for almost the entire campaign), so the large seed-quality difference is erased entirely; it affects only how quickly the plateau is reached, not where it lands. On cpython3, by contrast, neither campaign comes close to saturation -- they finish at 18.20\% and 16.88\% of a much larger map, still climbing -- and here the seed advantage persists: \texttt{synth} stays ahead throughout and ends with 24{,}277 edges to \texttt{direct}'s 22{,}523. The campaign narrows the relative gap (from $2\times$ at the seed stage to about $8\%$ at the end) but does not close it.
+
+\subsection{Discussion}
+\label{sec:eval-discussion}
+
+\textbf{The synthesis stage matters only as much as the AFL campaign leaves room for it to.} The clearest pattern across the two SUTs is that the value of the seed-synthesis stage is conditional on what the downstream campaign is able to do. When AFL++ can exhaust the target's reachable edges within the budget -- as on the small jsoncpp -- the campaign dominates and the synthesis stage becomes almost irrelevant to final coverage: a corpus covering 163 edges and one covering 568 end in exactly the same place. The synthesis stage then buys only \textit{time}-to-coverage, not more coverage. When AFL++ cannot exhaust the target within the budget -- as on cpython3 -- the campaign instead \textit{amplifies} the corpus it is given: a stronger starting corpus stays ahead for the whole run, and the synthesis stage's quality is reflected in the final result. For realistic, large targets, then, the quality of the synthesised seed corpus is a first-class concern -- which is precisely the regime this line of work is aimed at, and the regime in which the synthesis stage earns its keep relative to simply running the fuzzer for longer.
+
+\textbf{Target complexity explains the contrast.} The two SUTs sit at opposite ends of a complexity scale. jsoncpp parses JSON, a small and regular format whose semantics are limited to a handful of value types -- objects, arrays, strings, numbers, booleans, and null -- nested in simple ways; the harness exposes only $\sim$5{,}236 instrumented edges, and mutation fuzzing exhausts the reachable subset almost immediately. cpython3 is the CPython interpreter, which accepts the entire Python language: a far larger and semantically much richer target ($\sim$133{,}395 edges, roughly $25\times$ jsoncpp), with deeply varied constructs -- expressions, statements, control flow, functions, classes, comprehensions, exceptions, imports, and so on. Its input space is nowhere near exhausted in six hours, which is exactly why it both rewards and discriminates between seed-generation strategies where jsoncpp cannot. cpython3 is therefore the far more informative benchmark for our hypothesis, which is fundamentally about producing diverse, semantically interesting inputs; jsoncpp is simply too small and too semantically shallow for seed quality to express itself once a coverage-guided fuzzer is let loose on it.
+
+On the evidence of these two SUTs, the directness hypothesis is not yet supported: \texttt{synth} matches or beats \texttt{direct} on every end-to-end measure. These are early results, however -- a single repetition, a small local model, and only two SUTs (Section~\ref{sec:eval-threats}) -- and a fuller comparison across more SUTs and repetitions is needed before drawing firm conclusions.
 
 \section{Threats to Validity}
 \label{sec:eval-threats}
 
-We note the following limitations, to be expanded once results are in. The AFL++ campaigns currently use a \textbf{single repetition} per configuration, so per-run variance from the stochasticity of fuzzing is not yet quantified; multiple repetitions are planned where the time budget allows. Both tools use a \textbf{small local model}, which bounds the quality of generation for both; a larger model could change the absolute numbers, though the relative comparison should hold. The evaluation covers a \textbf{subset of SUTs} and so may not generalise to all input formats. Finally, as noted in Section~\ref{sec:eval-protocol}, synthesis-phase and AFL-phase coverage use different instrumentation and must not be compared across phases.
+We note the following limitations. The AFL++ campaigns currently use a \textbf{single repetition} per configuration, so per-run variance from the stochasticity of fuzzing is not yet quantified; multiple repetitions are planned where the time budget allows. Both tools use a \textbf{small local model}, which bounds the quality of generation for both; a larger model could change the absolute numbers, though the relative comparison should hold. The evaluation covers only \textbf{two SUTs} so far and so may not generalise to all input formats.
