@@ -22,7 +22,7 @@ A known challenge for generation-based fuzzing is probabilistic bias: the distri
 
 \subsection{Mutation-based fuzzing}
 
-Mutation-based fuzzers derive new inputs by mutating existing seeds, leveraging that real inputs satisfy many syntactic/semantic constraints and thus can bypass shallow checks \cite{bhme_2016_coveragebased}. Mutations range from low-level bit/byte flips and arithmetic on integers, to structural operators such as block insertion/deletion/duplication, splicing segments from multiple seeds, and dictionary/token-aware rewrites \cite{serebryany_2016_libfuzzer}. For example, in the AFL/AFL++ family of grey-box mutation fuzzers, the fuzzing loop is feedback-directed and proceeds roughly as follows:
+Mutation-based fuzzers derive new inputs by mutating existing seeds, leveraging that real inputs satisfy many syntactic/semantic constraints and thus can bypass shallow checks \cite{bhme_2016_coveragebased}. Mutations range from low-level bit/byte flips and arithmetic on integers, to structural operators such as block insertion/deletion/duplication, splicing segments from multiple seeds, and dictionary/token-aware rewrites \cite{serebryany_2016_libfuzzer}. For example, in the AFL/AFL++ family of grey-box mutation fuzzers \cite{fioraldi_2020_aflplusplus}, the fuzzing loop is feedback-directed and proceeds roughly as follows:
 \begin{enumerate}
   \item Initialize a queue (corpus) from seed inputs.
   \item Select a seed according to a power schedule that favours seeds with higher novelty/coverage potential, allocating them more mutation “energy” \cite{bhme_2016_coveragebased}.
@@ -31,7 +31,7 @@ Mutation-based fuzzers derive new inputs by mutating existing seeds, leveraging 
   \item Record the coverage bitmap (e.g., edge coverage with hitcounts) and, if the input exercises previously unseen edges or yields a sufficiently “interesting” coverage change, enqueue it as a new seed and update scheduling statistics.
   \item Triage, deduplicate (e.g., by coverage/signature), and minimize crashing inputs for efficient regression testing.
 \end{enumerate}
-AFL++ extends this loop with numerous engineering improvements (e.g., richer mutation operators and scheduling heuristics, dictionaries, context-sensitive coverage, and persistent execution modes) while retaining the same core principle: lightweight feedback steers mutations toward inputs that explore novel paths and uncover deeper bugs \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
+AFL++ extends this loop with numerous engineering improvements (e.g., richer mutation operators and scheduling heuristics, dictionaries, context-sensitive coverage, and persistent execution modes) \cite{fioraldi_2020_aflplusplus} while retaining the same core principle: lightweight feedback steers mutations toward inputs that explore novel paths and uncover deeper bugs \cite{bhme_2016_coveragebased}.
 
 While highly effective, mutation-based fuzzing is sensitive to seed quality and diversity: a narrow seed set can trap the search in local minima, whereas diverse seeds improve parser pass rates and enable deeper exploration. Consequently, corpus management (seed curation, minimization/deduplication, and power scheduling) is a first-class concern in production fuzzers \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
 
@@ -399,7 +399,7 @@ LMFuzz’s code validity is roughly twice that of Fuzz4All across five projects 
 \begin{itemize}
     \item While validity improves substantially over prior LLM fuzzers, it remains below strictly grammar-driven generators. More repair cycles can raise validity but reduce diversity/coverage due to time budget constraints.
     
-    \item Performance depends on initial prompt quality and model priors; the scoring function helps, but prompts that omit critical headers/imports or feature details degrade validity (Section 4.2.3). Updates to foundation models pose external validity threats.
+    \item Performance depends on initial prompt quality and model priors; the scoring function helps, but prompts that omit critical headers/imports or feature details degrade validity (Chapter 4.2.3). Updates to foundation models pose external validity threats.
     
     \item The approach is inference‑bound; per‑iteration generation and repair consume GPU time, limiting the total number of programs explored under fixed budgets.
     

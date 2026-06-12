@@ -1,0 +1,17 @@
+# elfuzz synth vs direct - edge-set comparison
+
+==================== jsoncpp (seed corpus, afl-showmap) ====================
+  synth edges:             568
+  direct edges:            163
+  intersection (both):     163
+  synth-only:              405
+  direct-only:               0
+  union of both:           568
+
+==================== cpython3 (seed corpus, afl-showmap) ====================
+  synth edges:           19634
+  direct edges:           9790
+  intersection (both):    9755
+  synth-only:             9879
+  direct-only:              35
+  union of both:         19669

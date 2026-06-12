@@ -1,0 +1,27 @@
+\chapter{Declarations}
+
+\section{Generative AI Usage}
+
+Several large language models were used during this project: GPT-5, Gemini 3.1, and Claude Opus 4.8. Their use is described below.
+
+In the background section, Claude Opus 4.8 was used to help find potentially relevant references and papers to cite. Every suggested source was checked by hand before being included.
+
+During development, Claude Opus 4.8 was used in a planning capacity to help blueprint the design and make implementation decisions. It also helped to debug difficult concurrency and memory-related bugs.
+
+The project itself uses LLMs as a core component: Claude Opus 4.8 generates the initial seed inputs, and Qwen2.5-Coder-1.5B drives the evolution loop.
+
+In the evaluation, Claude Opus 4.8 was used to write scripts that take the raw outputs from runs on the cluster and turn them into the tables and figures presented in this report.
+
+For the write-up, GPT-5 was used to proofread the report and identify unclear passages.
+
+\section{Ethical Considerations}
+
+This project raises no ethical concerns. It evaluates fuzzing techniques on open-source software and does not involve human participants, personal data, or sensitive systems.
+
+\section{Sustainability}
+
+This project raises no sustainability concerns beyond the energy used to run the experiments, which were carried out on a single workstation over a bounded time budget.
+
+\section{Availability of Data and Materials}
+
+All source code is available at \url{https://github.com/FaresShehata/final-year-project}, and the experimental results are available at \url{https://github.com/FaresShehata/final-year-project/tree/main/results}.
