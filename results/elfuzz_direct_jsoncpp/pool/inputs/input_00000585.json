@@ -1,0 +1,159 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "nameOverride": "",
+    "namespaceOverride": "",
+    "serviceAccountName": "platform-auth-serviceaccount",
+    "resources": null,
+    "serviceType": "ClusterIP",
+    "ingressEnabled": true,
+    "ingressClassName": "nginx",
+    "ingressHosts": [
+      "example.com",
+      "www.example.com",
+<|file_sep|><|fim_prefix|>/README.md
+# Platform Auth
+
+This repository contains the code for the Platform Auth Nginx ingress controller.
+
+## Building and Running
+
+The following should work for a standard Kubernetes installation:
+
+```bash
+helm fetch --untar https://raw.githubusercontent.com/platform-operator/charts/master/helm/platform-auth
+cd platform-auth
+sed -i.bak 's/{{ version }}/v1/g' values.yaml
+make docker-build push all
+```
+
+The above commands will build, push, and deploy a container image named `platform/auth:v1`, which should be available at `nginx.platform.auth`.
+
+You can also use `kubectl apply -f <path-to-chart>` to install the chart locally using kubectl, though you probably want to create an admin user first if there are no users currently created on the cluster.
+
+## Usage
+
+By default, the platform auth configmap sets up a single, public-facing ingress rule with a hostname of `auth.example.com`. This is only useful when testing locally; the production configmaps set up a private cluster IP, which is how the auth components interact with the rest of the platform via API calls.
+
+The platform auth configmap uses the Nginx configuration template provided by the nginx-ingress project (specifically, see the `templates/default.conf.template`) and adds some specific flags for our usage. See the [Nginx documentation](https://github.com/kubernetes/ingress-nginx/blob/main/docs/user-guide/nginx-configuration/configmap.md) for details on these flags.
+
+For example, here's what the public-facing config might look like:
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: ConfigMap
+metadata:
+  name: nginx-ingress
+  namespace: default
+data:
+  env: |-
+    AUTH_HOST=auth.example.com
+    AUTH_API_URL=https://{{ .Release.Name }}-webapps.auth.example.com/
+    AUTH_ADMIN_LOGIN=admin
+    AUTH_ADMIN_PASSWORD=password
+  nginx.ingress.kubernetes.io/auth-tls-secret: auth-public
+  nginx.ingress.kubernetes.io/auth-tls-verify-client: off
+  nginx.ingress.kubernetes.io/auth-url: https://auth.example.com/api/login/oauth/token
+  nginx.ingress.kubernetes.io/client-body-buffer-size: 1m
+  nginx.ingress.kubernetes.io/proxy-connect-timeout: '10'
+  nginx.ingress.kubernetes.io/proxy-read-timeout: '10'
+  nginx.ingress.kubernetes.io/proxy-send-timeout: '10'
+  nginx.ingress.kubernetes.io/server-snippet: |
+    location / {
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection keep-alive;
+      proxy_set_header Host $host;
+      proxy_cache_bypass $http_upgrade;
+      client_max_body_size 0;
+    }
+```
+
+And here's whatroleName: my-rbac-role
+serviceAccountName: my-rbac-sa
+```
+
+> NOTE: The `platform-auth-role` and `platform-auth-serviceaccount` have the default permissions needed to deploy and manage auth resources. Please review the [RBAC documentation](https://docs.nginx.com/nginx-ingress-controller/configuration/rbac/) for more information about configuring or removing permissions from the role and/or service account.
+
+### Using a Statefulset instead of Deployment
+
+If you're deploying this with Kubernetes in a statefulset mode, you'll need to make sure that the database pods are started before starting your webapp pod(s). If not, you may get errors similar to the following:
+
+```
+Error: Post http://<pod-name>.db:<port>/status: dial tcp <ip>:443: connect: connection refused
+```
+
+To fix this, you can add an initContainer to start the database (and wait until it has fully booted):
+
+```yaml
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  labels:
+    app: db
+spec:
+  selector:
+    matchLabels:
+      app: db
+  serviceName: db
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        # ...
+      initContainers:
+        - name: wait-for-db
+          image: alpine:latest
+          command: ['sh', '-c']
+          args:
+            - while ! nc -z db 5432; do echo waiting for postgres ... sleep 2; done; exit 0
+          volumeMounts:
+            - mountPath: /tmp/wait-test
+              name: wait-test-volume
+      volumes:
+        - name: wait-test-volume
+          emptyDir: {}
+```
+
+### Adding Custom Headers
+
+We recommend adding custom headers to your ingress rules so that you can easily verify that they were successfully applied. For example, you could add this to your configmap:
+
+```yaml
+  nginx.ingress.kubernetes.io/custom-request-header: X-Custom-Header: foo
+```
+
+You can then verify that the header was added by running `curl -I http://some-host.example.com`. You should see something like the below output.
+
+```shell
+$ curl -I http://my-app.example.com
+HTTP/1.1 200 OK
+Server: nginx/1.21.7
+Date: Mon, 26 Apr 2023 03:44:26 GMT
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-Powered-By: Express
+Via: 1.1 vegur
+Custom-Request-Header: X-Custom-Header: foo
+```
+
+Or, you

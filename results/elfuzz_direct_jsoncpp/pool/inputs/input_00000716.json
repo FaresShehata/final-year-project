@@ -1,0 +1,79 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "keyCollisions": [
+    { "value": "new Date(1)" }
+  ],
+
+  "deeplyNestedArrays": [[[[[[[[[[42]]]]]]]]]],
+
+  "deeplyNestedObjects": {
+    "l1": { "l2": { "l3": { "l4": { "l5": { "l6": { "l7": { "value": "bottom" } } } } } } }
+  },
+
+  "whitespaceStress":{"a":1,"b":2,"c":[1,2,3],"d":{"e":4}},
+
+  "wideObject": {
+    "h1": 1,   "h2": 2,   "h3": 3,   "h4": 4,
+    "f5": 5, "f6": 6, "f7": 7, "f8": 8, "f9": 9,  },
+  "unicodeEscapes": {
+    "basic": "\u0041\u0042\u0043",
+    "nullChar": "\u0000",
+    "control": "\u0001\u001f",
+    "nonPrintable": "\u000b\u000c\u000e-\u001f",
+    "hexEscape": "\\x0a\\x0b\\x0c\\xe0\\xef\\xf0\\xff",
+    "octalEscape": "\\01\\02\\03\\04\\05\\06\\07\\10",
+    "invalidHex": "\\xg",
+    "invalidOctal": "\\o"
+  },
+
+  "homogeneousNumberRanges": {
+    "uint8Min": 0,
+    "uint8Max": 255,
+    "uint16Min": 0,
+    "uint16Max": 65535,
+    "uint32Min": 0,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingZero": 0.50,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321,
+    "shortFloat": 100,
+    "missingDecimal": 1e,
+    "infinity": Infinity,
+    "nan": NaN,
+    "nullNum": null,
+    "emptyObj": {}, // no numeric properties
+    "arrayNaN": [NaN]
+  },
+  "doubleQuotesInStrings":{
+    "openQuote":"This is a string with \"quotes\" in it.",
+    "closeQuote:"This is another string with \"quotes\" in it."
+  },
+  "multipleLinesOfComments":{
+    /* This line contains multiple lines of comments that span over multiple lines */
+    "thisLineIsALongStringWithMultipleLinesAndSomeWhitespace": "\t\t\t\t\t\t\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n

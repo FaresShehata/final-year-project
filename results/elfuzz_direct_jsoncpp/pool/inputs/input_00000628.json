@@ -1,0 +1,233 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": [
+                    { "id": 4, "children": [], "leaf": true }
+                  ],
+                  "meta": { "depth": 4, "path": [0, 1, 2, 3] }
+                }
+              ],
+              "siblings": { "left": null, "right": { "ref": "#/root/node/children/0/children/0/children/1" } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "mixedArray": [
+    1,
+    "two",
+    3.0,
+    true,
+    false,
+    null,
+    { "key": "value" },
+    [1, [2, [3, [4, [5]]]]],
+    { "nested": { "again": { "andAgain": { "terminal": [] } } } }
+  ],
+  "graph": {
+    "nodes": [
+      { "name": "a", "edges": ["b", "c"] },
+      { "name": "b", "edges": ["a", "c", "d"] },
+      { "name": "c", "edges": [] },
+      { "name": "d", "edges": ["a", "b", "c", "d"] }
+    ],
+    "adjacency": {
+      "a": { "b": 1, "c": 2 },
+      "b": { "a": 1, "c": 1, "d": 5 },
+      "c": {},
+      "d": { "a": 0, "b": 0, "c": 0, "d": 0 }
+    },
+    "edges": {
+      "a": { "b": 1, "c": 2 },
+      "b": { "a": 1, "c": 1, "d": 5 },
+      "c": {},
+      "d": { "a": 0, "b": 0, "c": 0, "d": 0 }
+    }
+  },
+<|file_sep|>/pkg/dag/schema.go
+package dag
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/julienschmidt/httprouter"
+)
+
+// Handler wraps a function to be invoked by the http package.
+type Handler func(http.ResponseWriter, *http.Request, httprouter.Params) error
+## Structure Types
+
+### Core types
+
+| Type | Description |
+|------|-------------|
+| @core/string | String |
+| @core/number | Integer or Decimal |
+
+### Data types
+
+| Type | Description |
+|------|-------------|
+| @data/array | Array |
+| @data/object | Object |
+| @data/tuple | Tuple |
+| @data/map | Map |
+| @data/record | Record |
+| @data/collection | Collection |
+| @data/error | Error |
+| @data/any | Any |
+| @data/null | Null |
+| @data/miscellaneous-false | False |
+| @data/false | Boolean |
+| @data/utils | Utils |
+| @data/function | Function |
+| @data/expression | Expression |
+
+### Structural types
+
+| Type | Description |
+|------|-------------|
+| @structural/structure | Structure |
+
+### Control types
+
+| Type | Description |
+|------|-------------|
+| @control/successful | Successful |
+| @control/failure | Failure |
+| @control/incomplete | Incomplete |
+
+## @core/string
+
+A string value in JSON can either be a simple string, a number representing UTF-8 code points, or a Unicode escape sequence:
+
+| Value | Description |
+|-------|-------------|
+| `'foo'` | Simple string |
+| `'\u1234'` | Unicode escape sequence |
+| `"\\u1234"` | Escaped Unicode escape sequence |
+| `"\\\" \\n \t \"` | Escaped Unicode escape sequences |
+
+### @core/string: simple strings
+
+Simple strings are valid JSON strings except they do not contain any escaped characters.
+
+#### Valid
+
+```json
+"example"
+"\u1234abcd"
+"abc\\def\u0001ghi"
+"\\u1234\\udcbf\u1234\udcbf"
+```
+
+#### Invalid
+
+```json
+"example\n"
+"example\t"
+`"example"`
+`\u1234abc`
+```
+
+### @core/string: UTF-8 code points
+
+UTF-8 code points can only start with `\u` followed by four hexadecimal digits:
+
+#### Valid
+
+```json
+"\u1234"
+"\u0000"
+"\U00012345"
+"\u0000abc"
+"\uD800ab"
+"\uFFFF"
+```
+
+#### Invalid
+
+```json
+"\u0000    [1e6, 1e6, 1e6],
+    [1e6, 1e6, 1e6]
+  ],
+  "invalidNumericValues": [
+    NaN, Infinity, -Infinity, "NaN", "inf", "+inf", "-inf"
+  ],<|file_sep|><|fim_prefix|>/README.md
+# Numeric Edge Cases Test Suite for Python
+
+This test suite is designed to be run against the `python` implementation of the standard library's [`decimal`](https://docs.python.org/3/library/decimal.html) module.
+
+It tests a number of string and integer boundaries that are not represented as literal values in the specification:
+
+* The lowest and highest safe integers (and floats)
+* Various edge cases with long or very small numbers, including infinities
+* Upper and lower bounds on floating point precision loss
+* A variety of special floating-point values
+* The maximum number of significant digits allowed by the decimal module
+* Various corner cases involving scientific notation
+* Different types of arrays: empty, single-element, multi-element, nested, etc.
+* Array objects whose keys are numbers of gi* Values that cause overflow when used in arithmetic operations.
+* Certain boundary conditions on comparison operators.
+
+## Usage
+
+The test suite itself can be run using `pytest`. It will also generate an HTML report containing the results from each test case.
+
+### Install
+
+```sh
+pip install pytest
+To run the test suite:
+
+```sh
+pytest numeric_edge_cases.py --cov=decimal
+```
+<|fim_suffix|>ven the amount of time
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 }, { "value": "abc" }, { "value": {} }
+  ]
+```
+
+  * The idea here is that some structures may not specify a name which should then result in a different name being generated.
+  * For example, if you create a structure like this:
+    
+      ```js
+      const Struct = require('structured-types');
+      
+      new Struct({
+        value: Number
+      });
+      ```
+  
+    Then even though the type has no properties, its name will still be 'Number' because it cannot determine what the value would look like e.g. 'NumbersWithNanAndInf'.
+  * If the structure does not have one set it will just use the default name: 'Struct'
+ *
+ * @param {Structure} struc The structure to get the name for
+ * @returns {string} The name

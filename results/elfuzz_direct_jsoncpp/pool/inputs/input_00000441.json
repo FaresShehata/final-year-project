@@ -1,0 +1,96 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "namespace": "default"
+  },
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "boundaries": [
+    "-Infinity", "+Infinity"
+  ],
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": []
+            }
+          ]
+        }
+    <|file_sep|>/deeply-nested-recursive/README.md
+// Define the schema and version of your nested object. These can be any strings.
+const SCHEMA = 'deeply-nested';
+const VERSION = 3;
+
+// Create a deep copy of it so that we don't modify our original object
+let schemaCopy = JSON.parse(JSON.stringify(SCHEMA));
+console.log(schemaCopy); // deeply-nested
+
+// We will use this as an array to track all nodes in the graph
+const nodeRecord = [];
+
+/**
+ * This function is called when a new node is created during traversal. It will add the node to the record of nodes in the tree
+ */
+function createNode(node) {
+  let newNode = {
+    id: node.id,
+    children: node.children.map(child => child.id)
+  };
+
+  if (arrayContainsId(newNode.id, nodeRecord)) return; // skip duplicate ids
+
+  nodeRecord.push(newNode);
+}
+
+/**
+ * This function returns true if the given value exists within the given array
+ */
+function arrayContainsId(value, arr) {
+  for(let i = 0; i < arr.length; i++) {
+    if (arr[i].id === value) return true;
+  }
+
+  return false;
+}

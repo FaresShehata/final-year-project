@@ -1,0 +1,130 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+  ],
+
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "arrays": {
+    "empty": [],
+    "single": [1],
+    "double": [1, 2],
+    "three": [1, 2, 3],
+    "four": [1, 2, 3, 4],
+    "five": [1, 2, 3, 4, 5]
+  },
+  "objects": {
+    "empty": {},
+    "single": { "a": 1 },
+    "two": { "a": 1, "b": 2 },
+    "three": { "a": 1, "b": 2, "c": 3 }
+  },
+  "mathOperations": {
+    "addition": [
+      [1, 2], // normal
+      ["1", "2"], // string concat
+      [-1, "-2"] // negative numbers not allowed in math operators
+    ],
+    "multiplication": [
+      [1, 2], // normal
+      ["1", "2"], // string concat
+      ["1", null] // null and undefined aren't allowed, but number string is fine.
+    ],    "formfeed": "x\fy",
+    "newline": "line1\nline2",
+    "carriageReturn": "r1\rr2",
+    "tab": "col1\tcol2",
+    "allTogether": "\"\\\/\b\f\n\r\t"
+  },
+  "unicodeEscapes": {
+    "basic": "\u0041\u0042\u0043",
+    "nullChar": "\u0000",
+    "control": "\u0001\u001f",
+    "delete": "\u007f",
+    "latin": "caf\u00e9 na\u00efve r\u00e9sum\u00e9",
+    "greek": "\u03b1\u03b2\u03b3\u03b4\u03b5",
+    "cyrillic": "\u041f\u0440\u0438\u0432\u0435\u0442",
+    "hebrew": "\u05e9\u05dc\u05d5\u05dd",
+    "arabic": "\u0645\u0631\u062d\u0628\u0627",
+    "cjk": "\u4f60\u597d\u4e16\u754c",
+    "surrogatePair": "\ud83d\ude00\ud83d\ude80\ud83c\udf89",
+    "mixedSurrogate": "a\ud83d\ude00b\ud83c\udf08c"
+  },
+  "rawUnicode": {
+    "emoji": "😀🚀🎉🔥💯",
+    "accents": "café résumé naïve Zürich",
+    "cjk": "你好世界 こんにちは 안녕하세요",
+    "rtl": "שלום مرحبا",
+    "math": "∑∫√∞≠≤≥±×÷",
+    "symbols": "©®™€£¥§¶†‡•"
+  },
+  "edgeStrings": {
+    "onlyDigits": "12345",
+    "looksLikeNumber": "3.14",
+    "looksLikeBool": "true",
+    "looksLikeNull": "null",
+    "looksLikeJson": "{\"nested\":\"string\"}",
+    "veryLong": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "whitespaceVariety": " \t \n \r ",
+    "repeatingEscape": "\\n\\t\\r literal backslash sequences"
+  },
+  "keysWithSpecialChars": {
+    "key with spaces": 1,
+    "key\twith\ttabs": 2,
+    "key.with.dots": 3,
+    "key-with-dashes": 4,
+    "key_with_underscores_and_spaces": 5,
+    "noKeyWithDigit": 6,
+    "key_with_digit_123": 7,
+    "key-with-slash/colon": 8,
+<|file_sep|>/src/lib/tests/index.js
+const { stringAndUnicode } = require("./data");
+const { array, keysWithSpecialChars, arrayOfStrings } = require("./data");
+const { emptyFile, simpleString, emptyObject, emptyArray } = require("./data");
+
+module.exports = {
+  data: {
+    stringAndUnicode,
+    array,
+    keysWithSpecialChars,
+    arrayOfStrings,
+    emptyFile,
+    simpleString,
+    emptyObject,
+    emptyArray
+  },
+};

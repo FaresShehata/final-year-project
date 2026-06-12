@@ -1,0 +1,108 @@
+{
+# stax-rs
+
+[![Build Status](https://travis-ci.org/misterkool/stax.svg?branch=master)](https://travis-ci.org/misterkool/stax)
+[![Crates.io](https://img.shields.io/crates/v/stax.svg)](https://crates.io/crates/stax)
+
+This is a library and command line tool that allows you to recursively traverse the DOM tree of a given XML file.
+
+## Why do I need this?
+
+I needed to parse and manipulate large XML files that had many deeply nested elements and attributes. The Java libraries such as `javax.xml.parsers` and `org.w3c.dom` were not sufficient for my needs because they did not support deep recursion (they have no way to traverse the entire tree) or allowed you only to read and write to the top-level elements which was not enough for me. So, I wrote this library to provide an efficient solution to my problem.
+
+The original implementation used C++, but it turned out to be too slow and heavy-weight to fit into our production environment so we decided to rewrite it from scratch using Rust instead. You can find the original source code at <https://github.com/dankor/stax>. 
+
+## How does it work?
+
+The library uses a set of custom recursive data structures called "nodes". Each node represents either a leaf element or a non-leaf element with its children and siblings. The nodes are stored in a binary search tree-like structure called "the root". 
+
+In order to get to a specific node, one must navigate through all of its ancestors. We achieve this by maintaining a stack of pointers to each ancestor's parent node during traversal. Every time we reach a new node, we push its pointer onto the stack and update the current pointer to point to the newly visited node. When we want to go back up the hierarchy, we simply pop the last element off the stack and reset the current pointer to point to the next sibling of the popped node.
+
+For example, consider the following XML document:
+```xml
+<ROOT>
+  <A>
+    <B id="1">
+      <C id="2">
+        <D id="3"/>
+      </C>
+    </B>
+    <B id="4">
+      <E id="5">
+        <F id="6"/>
+      </E>
+    </B>
+  </A>
+</ROOT>
+```
+We can represent the above document like this:
+
+| Node | Parent       | Sibling |
+| ---- | ------------ | ------- |
+| ROOT | -            | -       |
+| A    | ROOT         | B       |
+const (
+  ROOT = iota
+  A
+  B
+  C
+  D
+  E
+  F
+)
+```
+
+When traversing the document, we start from the root node:
+
+| Level | Current Pointer     | Stack      |
+| ------| --------------------|------------|
+| 0     | &ROOT               | -          |
+| 1     | &A                  | &ROOT      |
+| 2     | &B                  | &ROOT &A   |
+| 3     | &C                  | &ROOT &A &B |
+
+And then we move on to the next level:
+
+| Level | Current Pointer     | Stack      |
+| ------| --------------------|------------|
+| 0     | &ROOT               | -          |
+| 1     | &A                  | &ROOT      |
+| 2     | &B                  | &ROOT &A   |
+| 3     | &C                  | &ROOT &A &B |
+| 4     | &D                  | &ROOT &A &B &C |
+
+And finally, when we reach the end, we backtrack to the previous levels until we find the closest ancestor of the target element:
+
+| Level | Current Pointer     | Stack      |
+| ------| --------------------|------------|
+| 0     | &ROOT               | -          |
+| 1     | &A                  | &ROOT      |
+| 2     | &B                  | &ROOT &A   |
+| 3     | &C                  | &ROOT &A &B |
+| 4     | &D                  | &ROOT &A &B &C |
+| 5     | &D                  | &ROOT &A &B &C &D |
+
+Then we continue backwards to the nearest ancestor of the target element:
+
+| Level | Current Pointer     | Stack      |
+| ------| --------------------|------------|
+| 0     | &ROOT               | -          |
+| 1     | &A                  | &ROOT      |
+| 2     | &B                  | &ROOT &A   |
+| 3     | &C                  | &ROOT &A &B |
+| 4     | &D                  | &ROOT &A &B &C |
+
+And finally, we find the target element:
+
+| Level | Current Pointer     | Stack      |
+| ------| --------------------|------------|
+| 0     | &ROOT               | -          |
+| 1     | &A                  | &ROOT      |
+| 2     | &B	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Hello, World!")
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(versionCmd)
+}

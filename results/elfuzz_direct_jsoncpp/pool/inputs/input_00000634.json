@@ -1,0 +1,320 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": []
+                },
+                {
+                  "id": 4,
+                  "children": [
+                    {
+                      "id": 5,
+                      "children": []
+                    },
+                    {
+                      "id": 6,
+                      "children": [
+                        {
+                          "id": 7,
+                          "children": []
+                        },
+                        {
+                          "id": 8,
+                          "children": [
+                            {
+                              "id": 9,
+                              "children": []
+                            },
+                            {
+                              "id": 10,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": 11,
+              "children": [
+                {
+                  "id": 12,
+                  "children": [
+                    {
+                      "id": 13,
+                      "children": [
+                        {
+                          "id": 14,
+                          "children": []
+                        },
+                        {
+                          "id": 15,
+                          "children": [
+                            {
+                              "id": 16,
+                              "children": []
+                            },
+                            {
+                              "id": 17,
+                              "children": [
+                                {
+                                  "id": 18,
+                                  "children": []
+                                },
+                                {
+                                  "id": 19,
+                                  "children": []
+                                }
+                              ]
+                            },
+                            {
+                              "id": 20,
+                              "children": [
+                                {
+                                  "id": 21,
+                                  "children": []
+                                },
+                                {
+                                  "id": 22,
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": 23,
+                          "children": [
+                            {
+                              "id": 24,
+                              "children": [
+                                {
+                                  "id": 25,
+                                  "children": []
+                                },
+                                {
+                                  "id": 26,
+                                  "children": [
+                                    {
+                                      "id": 27,
+                                      "children": []
+                                    },
+                                    {
+                                      "id": 28,
+                                      "children": [
+                                        {
+                                          "id": 29,
+                                          "children": []
+                                        },
+                                        {
+                                          "id": 30,
+                                          "children": []
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": 31,
+                              "children": [
+                                {
+                                  "id": 32,
+                                  "children": [
+                                    {
+                                      "id": 33,
+                                      "children": []
+                                    },
+                                    {
+                                      "id": 34,
+                                      "children": []
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": 35,
+                                  "children": [
+                                    {
+                                      "id": 36,
+                                      "children": []
+                                    },
+                                    {
+                                      "id": 37,
+                                      "children": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": 38,
+                      "children": [
+                        {
+                          "id": 39,
+                          "children": [
+                            {
+                              "id": 40,
+                              "children": [
+                                {
+                                  "id": 41,
+                                  "children": []
+                                },
+                                {
+                                  "id": 42,
+                                  "children": [
+                                    {
+                                      "id": 43,
+                                      "children": []
+                                    },
+                                    {
+                                      "id": 44,
+                                      "children": [
+                                        {
+                                          "id": 45,
+                                          "children": []
+                                        },
+                                        {
+                                          "id": 46,
+                                          "children": []
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                                 "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "uint64Max": 18446744073709551615,
+    "floatNaN": NaN,
+    "floatInfinityPositive": Infinity,
+    "floatInfinityNegative": -Infinity,
+    "infinityWithoutValue": Number.POSITIVE_INFINITY,
+    "negativeInfinity": -Number.POSITIVE_INFINITY,
+    "positiveZero": +0,
+    "-positiveZero": -+0,
+    "undefined": undefined,
+    "null": null,
+    "emptyString": "",
+    "whitespaceCharacters": {
+      "whitespaceCharacter": true,
+      "nonWhitespaceCharacter": false,
+      "controlCharacter": false
+    },
+    "space": " ",
+    "tab": "\t",
+    "lineFeed": "\n",
+    "carriageReturn": "\r",
+    "doubleQuote": "\"",
+    "backslash": "\\",
+    "newline": "\u21B5",
+    "unicodeEscapeSequence": "\u{21B5}",
+    "escapeSequences": [
+      ["Hello ", "World"],
+      ["1", "2"]
+    ],
+    "stringRepetition": [
+      ["Hello ", 3],
+      ["A", 10]
+    ],
+    "charCode":    "precisionLoss": [0.1, 0.2, 0.30000000000000004],
+    "divisionByTiny": [1, 1e-300],
+    "divisionByBig": [1, 1e300],
+    "divisionByTinyExponent1": [1, 1e-300],
+    "divisionByBigExponent1": [1, 1e300],
+
+    "lessThanOne": [0.9, 0.8, 0.7],
+    "greaterThanOne": [1.1, 1.2, 1.3],
+    "preciseLessThanOne": [0.9, 0.8, 0.7, 0.69999999999999999],
+    "preciseGreaterThanOne": [1.1, 1.2, 1.3, 1.30000000000000003],
+
+    "lessThanTwo": [1.9, 1.8, 1.7],
+    "greaterThanTwo": [2.1, 2.2, 2.3],s/index.md
+# Dynamic Recursives
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/1UIPcUJwv_g?start=414&end=441" frameborder="0" allowfullscreen></iframe>
+
+[Dynamic Recursion](https://youtu.be/1UIPcUJwv_g?t=414)
+
+> A recursive algorithm is dynamic if there exists some element or elements that change during execution while still maintaining the correct solution.
+
+Source: [YouTube](https://www.youtube.com/watch?v=1UIPcUJwv_g&t=414s)
+
+The [algorithmic thinking video series](https://youtube.com/playlist?list=PLDkYzPVGzgFQVZAqfKktuLjqxjTzZpE-I) also contains a lecture on dynamic recursion.
+
+---
+
+<a name="example"></a>
+## Example
+
+### Problem Statement
+
+Given an array of integers and a target sum `S`, find all pairs of numbers in the given array whose sum equals to the target sum `S`.
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  ],
+
+  "floatingPointNumbers": [
+    0, 0.,
+    0.0, 0.0,
+    0, -0, 1, -1, 0.1, -0.1,
+    1e0, 1e1, 1e2, 1e308, 1e-308,
+    0.0001, 1000000000000,
+    3.141592653589793,
+    2.718281828459045
+  ],
+  "arithmeticHints": {
+    "shouldOverflowAddition": [9007199254740991, 1],
+    "precisionLoss": [0.1, 0.2, 0.30000000000000004],
+    "divisionByTiny": [1, 1e-300],
+    "roundTrip": 0.30000000000000004
+  },
+  "mixedSignArray": [-5, 4, -3, 2, -1, 0, 1, -2, 3, -4, 5],
+  "scientificGrid": [
+    [1e1, 1e2, 1e3],
+    [1e5, 1e5, 1e5],
+    [1e5, 1e5, 1e5],
+    [1e6, 1e6, 1e6],
+    [1e6, 1e6, 1e6]
+  ],
+  "invalidNumericValues": [
+    NaN, Infinity, -Infinity, "NaN", "inf", "+inf", "-inf"
+  ],<|file_sep|><|fim_prefix|>/README.md
+# Numeric Edge Cases Test Suite for Python
+
+This test suite is designed to be run against the `python` implementation of the standard library's [`decimal`](https://docs.python.org/3/library/decimal.html) module.
+
+It tests a number of string and integer boundaries that are not represented as literal values in the specification:
+
+* The lowest and highest safe integers (and floats)
+* Various edge cases with long or very small numbers, including infinities
+* Upper and lower bounds on floating point precision loss

@@ -67,5 +67,4 @@ plot/table/*
 
 /seed_corpora/
 /logs/
-/results/
 .vscode/settings.json

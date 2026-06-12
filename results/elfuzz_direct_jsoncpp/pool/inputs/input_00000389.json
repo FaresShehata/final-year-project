@@ -1,0 +1,175 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": [
+                    { "id": 4, "children": [], "leaf": true }
+                  ],
+                  "meta": { "depth": 4, "path": [0, 1, 2, 3] }
+                }
+              ],
+              "siblings": { "left": null, "right": { "ref": "#/root/node/children/0/children/0/children/1" } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "mixedArray": [
+    1,
+    "two",
+    3.0,
+    true,
+    false,
+    null,
+    { "key": "value" },
+    [1, [2, [3, [4, [5]]]]],
+    { "nested": { "again": { "andAgain": { "terminal": [] } } } }
+  ],
+  "graph": {
+    "nodes": [
+      { "name": "a", "edges": ["b", "c"] },
+      { "name": "b", "edges": ["a", "c", "d"] },
+      { "name": "c", "edges": [] },
+      { "name": "d", "edges": ["a", "b", "c", "d"] }
+    ],
+    "adjacency": {
+      "a": { "b": 1, "c": 2 },
+      "b": { "a": 2, "c": 1, "d": 3 },
+      "c": { "a": 3, "b": 1, "d": 1 },
+      "d": { "a": 1, "b": 3, "c": 1, "d": 1 }
+<|file_sep|>/src/matrix/index.js
+import deepEqual from 'deep-equal';
+/**
+ * @param {string} name The name of this test case.
+ * @param {*} input The input to feed into the function under test.
+ * @param {*} expected The expected output.
+ */
+export default (name, input, expected) => assert.strictEqual(deepEqual(input, expected), true, `The result is: ${JSON.stringify(input)}\nExpected:\n${JSON.stringify(expected)}`);
+<|file_sep|>/tests/test-decimal.test.ts
+# Decimal Numbers in JavaScript
+
+## Supported Bases and Formats
+
+Decimal numbers can be represented as strings in any base from binary (base 2) up to hexadecimal (base 16). In addition, the following formats are supported:
+
+| Format | Description |
+|--------|-------------|
+| **`0`**       | One or more digits followed by an optional decimal point and zero or more digits.<br>`0.0`, `000.00000`, `1000.0000`<br>Examples:<ul><li>`000.0000`</li></ul>
+| **`.0`**     | A single digit preceded by a dot and an optional decimal point and one or more digits.<br>`0.0`, `.00000`, `.0`<br>Examples:<ul><li>`000.0000`</li></ul>
+| **`.`**      | A single dot without any preceding digits or digits after it.<br>.<br>Example: `<blank>`
+| **`+.`**     | A plus sign preceding the dot.<br>+.<br>Example: `<blank>`
+| **`-.`**     | A minus sign preceding the dot.<br>-.<br>Example: `-0.<blank>`
+| **`--`**     | Two consecutive minuses signs.<br>--<br>Example: `--0.<blank>`
+| **`...`**    | Three consecutive dots.<br>...<br>Example: `--0..<blank>`
+| **`..`**     | Two consecutive dots.<br>..<br>Example: `0..<blank>`
+| **`+-`**     | Plus sign immediately before the dot and a minus sign.<br>+.<br>Example: `0.+<blank>`
+| **`-.+`**    | Minus sign immediately before the dot and a plus sign.<br>-.<br>Example: `0.-+pytest numeric_edge_cases.py --cov=decimal
+```
+<|fim_suffix|>ven the amount of time
+  "typeCollisionArray": [
+```
+
+
+## Allowed Values
+
+* **Numbers**
+	* Infinity
+	* NaN
+* **Strings**
+	* Empty string (`""`)
+	* Null value (`null`)
+	* Array containing all of the allowed values below
+* **Objects**
+	* An object with the property `value` that contains any of the allowed values above
+* **Arrays**
+	* An array containing all of the allowed values below
+* **Mixed Arrays**
+	* An array containing arrays of mixed objects and/or numbers
+* **Graphs**
+	* An object where each key maps to another key and the value is the number of edges going out of that node
+* **Infinity**
+	* Positive infinity (`∞`)
+	* Negative infinity (`−∞`)
+* **NaN**
+	* Not-a-number (Not-A-Number)
+* **Sets**
+	* An array of unique values
+* **Maps**
+	* An object with keys and corresponding values
+* **Functions**
+	* A function returning one of the allowed types listed above<|file_sep|><|fim_prefix|>/docs/coding-style.md
+import deepEqual from 'deep-equal';
+
+// These tests were copied over from the original implementation:
+// https://github.com/nickfleming/javascript-samples/tree/main/typescript-decimal-numbers
+
+describe('isFinite()', () => {
+  const validValues = [-1, -1e10, -0.0000000000000000000000001, -0x1p20];
+  const invalidValues = ['Infinity', '-Infiniti'];
+  const stringValidValues = ['-1', '-1e10', '-0.0000000000000000000000001', '-0x1p20'];
+
+  validValues.forEach(val => {
+    it(`should return true if given "${val}"`, () => {
+      expect(isFinite(val)).toBe(true);
+    });
+  });
+
+  invalidValues.forEach(val => {
+    it(`should return false if given "${val}"`, () => {
+      expect(isFinite(val)).toBe(false);
+    });
+  });
+
+  stringValidValues.forEach(val => {
+    it(`should convert a string representation of a finite number "${val}" to its canonical numberic value`, () => {
+      expect(isFinite(val)).toBe(true);
+      expect(Number.isFinite(val)).toBe(true);
+    });
+  });
+});
+
+describe('isNaN()', () => {
+  describe('Given a valid numeric value', () => {
+    const validValues = [-1, -1e10, -0.0000000000000000000000001, -0x1p20];
+
+    describe.each(validValues)(`Should return false for %p`, val => {
+      it('', () => {
+        expect(isNaN(val)).toBe(false);
+      });
+    });
+  });
+
+  describe('Given an invalid numeric value', () => {
+    const invalidValues = ['Infinity', '-Infiniti'];
+
+   
+### `kustomize.yaml`
+
+We've enabled kustomization so that we can easily manage all of our Kubernetes resources in one place. To learn more about Kustomize, see the [Kubernetes Best Practices](https://github.com/kubernetes/kubectl/blob/master/examples/best-practices.md#using-kustomize-to-manage-your-resources).
+
+### `application-config.yaml`
+
+In addition to the kustomizations, we also include some additional configurations for our application here:
+
+* `deployment`: We specify multiple replicas for each deployment, which allows us to scale out our service horizontally when needed.
+* `targetPorts`: Specify the port numbers that each container exposes.
+* `env`: Add environment variables to the containers, such as logging level and maximum connections.
+* `secret`: Store secrets in our secret store, including tokens and passwords, and make them available to pods via volumes or environment variables.
+* `ingress`: Configure ingress rules to route requests to our application based on hostnames and paths.

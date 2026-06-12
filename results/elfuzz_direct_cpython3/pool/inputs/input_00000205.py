@@ -1,0 +1,273 @@
+"""
+Seed 02 — async/await, Protocols, dataclasses, __slots__, structural pattern matching,
+          walrus operator, typing generics, exception groups, ExceptionGroup
+"""
+
+from __future__ import annotations
+
+import asyncio
+import bisect
+import dataclasses
+import enum
+import heapq
+import json
+import random
+import re
+import time
+from collections import Counter, defaultdict, deque
+from typing import (
+    TYPE_CHECKING,
+    Awaitable,
+    Callable,
+    ClassVar,
+    Generic,
+    Iterator,
+    Literal,
+    Protocol,
+    TypeVar,
+    overload,
+    runtime_checkable,
+)
+
+if TYPE_CHECKING:
+    pass  # keep TYPE_CHECKING branch exercised
+
+K = TypeVar("K")
+V = TypeVar("V")
+T = TypeVar("T")
+
+# ── Enums ─────────────────────────────────────────────────────────────────────
+
+class Status(enum.Enum):
+    PENDING   = "pending"
+    RUNNING   = "running"
+    SUCCESS   = "success"
+    FAILED    = "failed"
+    CANCELLED = "cancelled"
+
+    def is_terminal(self) -> bool:
+        return self in {Status.SUCCESS, Status.FAILED, Status.CANCELLED}
+
+
+class Priority(enum.IntEnum):
+    LOW    = 1
+    NORMAL = 5
+    HIGH   = 10
+    URGENT = 20
+
+
+class Flag(enum.Flag):
+    READ    = enum.auto()
+    WRITE   = enum.auto()
+    EXECUTE = enum.auto()
+    RWX     = READ | WRITE | EXECUTE
+
+
+# ── Protocols ─────────────────────────────────────────────────────────────────
+
+@runtime_checkable
+class Serialisable(Protocol):
+    def to_dict(self) -> dict: ...
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Serialisable": ...
+
+
+@runtime_checkable
+class Runnable(Protocol):
+    async def run(self) -> str: ...
+
+
+# ── Dataclasses ───────────────────────────────────────────────────────────────
+
+@dataclasses.dataclass(order=True, frozen=False, slots=True)
+class Point:
+    x: float
+    y: float
+
+    def distance(self, other: Point) -> float:
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
+
+
+@dataclasses.dataclass
+class Task:
+    id: int
+    name: str
+    priority: Priority = Priority.NORMAL
+    status: Status = dataclasses.field(default=Status.PENDING)
+    tags: list[str] = dataclasses.field(default_factory=list)
+    metadata: dict = dataclasses.field(default_factory=dict)
+    _history: list[Status] = dataclasses.field(default_factory=list, repr=False)
+
+    # comparison key ignores status
+    sort_key: int = dataclasses.field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "sort_key", -int(self.priority))
+
+    def transition(self, new_status: Status) -> None:
+        self._history.append(self.status)
+        self.status = new_status
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "priority": self.priority.name,
+            "status": self.status.value,
+            "tags": self.tags,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Task:
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            priority=Priority[data.get("priority", "NORMAL")],
+            status=Status(data.get("status", "pending")),
+            tags=data.get("tags", []),
+        )
+
+
+assert isinstance(Task(1, "t"), Serialisable), "Task should satisfy Serialisable"
+
+
+# ── Generic container ─────────────────────────────────────────────────────────
+
+class SortedList(Generic[T]):
+    """Keeps elements sorted using bisect."""
+
+    def __init__(self) -> None:
+        self._data: list[T] = []
+
+    def add(self, item: T) -> None:
+        bisect.insort(self._data, item)  # type: ignore[arg-type]
+
+    def discard(self, item: T) -> None:
+        idx = bisect.bisect_left(self._data, item)  # type: ignore[arg-type]
+        if idx < len(self._data) and self._data[idx] == item:
+            self._data.pop(idx)
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __repr__(self) -> str:
+        return f"SortedList({self._data!r})"
+
+
+# ── Collections ───────────────────────────────────────────────────────────────-
+
+def merge_sort(iterable: Iterable[T]) -> list[T]:
+    if not iterable or len(iterable) <= 1:
+        return list(iterable)
+
+    left, right = split_iterable(iterable)
+    left_sorted = merge_sort(left)
+    right_sorted = merge_sort(right)
+    return merge_lists(left_sorted, right_sorted)
+
+
+def split_iterable(iterable: Iterable[T]) -> tuple[list[T], list[T]]:
+    mid_idx = len(iterable) // 2
+    return iterable[:mid_idx], iterable[mid_idx:]
+
+
+def merge_lists(a: list[T], b: list[T]) -> list[T]:
+    c = []
+    while a or b:
+        if not a:
+            c.extend(b)
+            break
+        elif not b:
+            c.extend(a)
+            break
+
+        if a[0] < b[0]:
+            c.append(a.pop(0))
+        else:
+            c.append(b.pop(0))
+
+    return c
+
+
+def heapify(iterable: Iterable[T]) -> list[T]:
+    h = list(iterable)
+    heapq.heapify(h)
+    return h
+
+
+def partition(seq: Sequence, pred: Callable[[Any], bool]) -> Tuple[List, List]:
+    t, f = [], []
+    for i in seq:
+        (t if pred(i) else f).append(i)
+    return t, f
+
+
+def zip_longest(*args, fillvalue=None) -> Iterator[tuple[Any, ...]]:
+    num_args = len(args)
+    iterators = [iter(it) for it in args]
+    try:
+        while True:
+            values = tuple(map(next, iterators))
+            yield values
+    except StopIteration:
+        while iterators:
+            iterator = iterators.pop()
+            next(iterator, fillvalue)
+
+
+# ── Exceptions ────────────────────────────────────────────────────────────────
+
+class MyError(Exception):
+    def __str__(self) -> str:
+        return "This is an error!"
+
+
+def raise_error() -> None:
+    raise MyError()
+
+
+async def raise_async_error() -> None:
+    await asyncio.sleep(0.1)
+    raise MyError()
+
+
+class NotEnoughMoneyError(Exception):
+    pass
+
+
+class InsufficientFundsError(ValueError):
+    pass
+
+
+try:
+    my_list = ["a"]
+except TypeError as e:
+    print(e)
+else:
+    print(my_list)
+
+try:
+    my_list = ["b"] + [            return NotImplemented
+        return type(self) is type(other) and self.area() == other.area()
+
+    def __hash__(self) -> int:
+        return hash((type(self).__name__, round(self.area(), 8)))
+
+
+import math
+
+class Circle(Shape):
+    radius: float = TypedDescriptor(float, lo=0.0)  # type: ignore[assignment]
+
+    def __init__(self, radius: float, color: str = "red"):
+        super().__init__(color)
+        self.radius = radius
+
+    def area(self) -> float:
+        return math.pi * self.radius ** 2
+
+    def perimeter(self) -> float:

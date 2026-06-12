@@ -1,0 +1,109 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "boundaries": [
+    0, -0, 1, -1, 0.1, -0.1,
+    1e0, 1e1, 1e2, 1e308, 1e-308,
+    0.0001, 1000000000000,
+    3.141592653589793, -2.718281828459045, -0.0000000001,
+    0.5, 100, 0.00000000000001,
+    1e10, 1e-10, 1E10, 1E-10,
+    123456789012345678901234567890, -987654321098765432109876543210
+<|file_sep|>/src/number.js
+/**
+ * @module Number
+ */
+
+// The `Number` namespace. This is where all the Number functions will be added.
+var number = module.exports = {};
+
+/**
+ * Returns an array of numbers that are between or equal to start and stop. Both bounds are included in the returned array. If both arguments are integers, they will be converted to floats before being passed to this function. Otherwise, they will be left as-is.
+
+If only one argument is provided, it is assumed to be a number and returned as an array containing just that single element.
+
+Note: Unlike Python's range(), this function does not support negative step sizes.
+
+@param {number|Array} start inclusive lower bound
+@param {number}      end   exclusive upper bound
+@param {number=}     step  optional increment value; defaults to 1
+
+@returns {Array} list of numbers from `start` (inclusive) to `end` (exclusive)
+ */
+function range(start, end, step) {
+  var result = [];
+
+  // Handle no input:
+  if (!arguments.length || typeof start === "undefined") return result;
+
+  // Convert non-numbers to numbers:
+  start = !isNaN(+start) ? +start : NaN;
+  end = !isNaN(+end) ? +end : NaN;
+
+  // Convert integers to floats:
+  if (typeof start !== "number" && typeof end !== "number")
+    throw new Error('Non-number arguments passed into range()');
+
+  if ((typeof start === "number" && isNaN(start)) ||
+      (typeof end === "number" && isNaN(end)))
+    return result;
+
+  // Calculate the number of steps required based on the sign of the step size:
+  if (step == null) step = 1;
+<|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|>  else if (typeof step !== "number") step = NaN;
+  else if (step > 0) step = Math.ceil((end - start)/step);
+  else step = Math.floor((end - start)/step);
+
+  // Loop through each value and add it to the results list:
+  for (var i = 0; i <= step; ++i) {
+    result.push(i*step + start);
+  }
+
+  // Return the list:
+  return result;
+}
+
+/**
+ * Returns true if x is close enough to y to be considered equivalent given the tolerance parameter. This function is similar to JavaScript's built-in equality operator but adds a decimal place margin of error. A more accurate version would need to use floating point precision instead of integer division (see: http://www.johndcook.com/blog/ieee_numbers/).
+
+This function returns true if either:
+
+x is less than the absolute value of the difference between y and z multiplied by the tolerance parameter.
+y is less than the absolute value of the difference between x and z multiplied by the tolerance parameter.
+z is less than the absolute value of the difference between x and y multiplied by the tolerance parameter.
+
+The default tolerance is 2^-52, which should be more than sufficient for most purposes. It can be set to a smaller value if needed.
+
+@param {number} x any number

@@ -1,0 +1,53 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "large": 1e50,
+    "small": 1e-50,
+    "hexadecimal": 0x1.ffffp+1023,
+    "binaryExponent": 0x1.ffffp+1023,
+    "inf": Infinity,
+    "nan": NaN
+  },
+  "specialValues": [
+    "NaN",
+    "+Infinity",
+    "-Infinity"
+  ],
+  "arrays": [
+<|file_sep|>/src/tests/func.js
+var assert = require("assert");
+var eqArrays = require("../eqArrays");
+
+describe("#eqArrays()", function() {
+
+	it("should return true if the two arrays are equal", () => {
+		assert.equal(eqArrays([1, 2, 3], [1, 2, 3]), true);
+	});
+
+	it("should return false if the array is not equal", () => {
+		assert.equal(eqArrays(["a", "b"], ["c"]), false);
+	});
+
+	it("should return true for an empty array of length zero", () => {
+		assert.equal(eqArrays([], []), true);
+	});
+});

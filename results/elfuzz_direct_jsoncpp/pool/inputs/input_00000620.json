@@ -1,0 +1,286 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      {
+        "protocol": "http",
+        "name": "web-api",
+        "selector": "app=web-api",
+        "path": "/v1/web/api/",
+        "servicePort": 8080
+      }
+    ],
+    "healthCheck": {
+      "timeoutSeconds": 5,
+      "intervalSeconds": 10,
+      "initialDelaySeconds": 120,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "priorityClassName": "deployment-priority-class",
+    "nodeAffinity": {},
+    "tolerations": [],
+    "affinity": {},
+    "podAntiAffinity": {}
+  },
+  "status": {
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "updatedAt": "2024-11-03T15:01:10.234Z"
+  },
+  "spec": {
+    "runtime": {
+      "type": "docker",
+      "image": "example/image"//,
+      // "args": ["/bin/bash"]
+    },
+    "container": {
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "protocol": "TCP",
+          "targetPort": 80
+        }/*,
+        {
+          "hostPort": 8080,
+          "protocol": "TCP",
+          "targetPort": 8080
+        }*/
+      ]
+    },
+    "networks": [
+      {
+        "mode": "overlay",
+        "options": {
+          "com.docker.network.driver.overlay.vxlanid_list": "4097"
+        },
+        "subnet": ""
+      }
+    ],
+    "volumeMounts": [
+      {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "readOnly": true,
+        "subPath": "",
+        "name": "default-token-hzslj"
+      }
+    ],
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/health/liveness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/health/readiness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "env": [],
+    "resources": {
+      "requests": {
+        "cpu": "2000m",
+        "memory": "4Gi"
+      },
+      "limits": {
+        "cpu": "500m",
+        "memory": "1Gi"
+      }
+    },
+    "securityContext": {
+      "capabilities": {
+        "add": [],
+        "drop": []
+      },
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      },
+      "runAsUser": -1,
+      "fsGroup": -1,
+      "fsGroupChangePolicy": "Always",
+      "allowPrivilegeEscalation": false,
+      "privileged": false,
+      "readOnlyRootFilesystem": false,
+      "procMount": "Default",  "integers": {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "twentyOne": 21,
+    "twentyTwo": 22,
+    "twentyThree": 23,
+    "twentyFour": 24,
+    "twentyFive": 25,
+    "twentySix": 26,
+    "twentySeven": 27,
+    "twentyEight": 28,
+    "twentyNine": 29,
+    "thirty": 30,
+    "thirtyOne": 31,
+    "thirtyTwo": 32,
+    "thirtyThree": 33,
+    "thirtyFour": 34,
+    "thirtyFive": 35,
+    "thirtySix": 36,
+    "thirtySeven": 37,
+    "thirtyEight": 38,
+    "thirtyNine": 39,
+    "forty": 40,
+    "fortyOne": 41,
+    "fortyTwo": 42,  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "boundaries": [
+    0, -0, 1, -1, 0.1, -0.1,
+    1e0, 1e1, 1e2, 1e308, 1e-308,
+    0.0001, 1000000000000,
+    3.141592653589793, -2.718281828459045, -0.0000000001,
+    0.5, 100, 0.00000000000001,
+    1e10, 1e-10, 1E10, 1E-10,
+    123456789012345678901234567890, -987654321098765432109876543210
+<|file_sep|>/src/number.js
+# Numeric Edge Cases
+
+This repo is a collection of numeric edge cases for testing numeric operations.
+
+## Running the Tests
+
+To run the tests: `npm test` (or `yarn test`) and then open http://localhost:1337/tests/
+
+## Adding New Test Data
+
+The format should be:
+```
+"test name": {
+  "description": "",
+  "code": ""
+}
+```
+
+If you're adding new numbers to the list, make sure they are formatted in scientific notation with at least two digits after the decimal point.
+<|file_sep|><|fim_prefix|>/test/integrations/native.js
+'use strict';
+
+const assert = require('assert');
+const testdata = require('./testdata');
+
+function add(a, b) {
+  return Number(a + b);
+}
+
+describe("Addition", function() {
+
+  describe("edge cases", function() {
+    it('should handle zero', function() {
+      assert.equal(0, add(0, 0));
+    });
+    it('should handle negZero', function() {
+      assert.equal(-0, add(-0, -0));
+    });
+    it('should handle one', function() {
+      assert.equal(1, add(1, 0));
+    });
+    it('should handle negOne', function() {
+      assert.equal(-1, add(-1, 0));
+    });
+    it('should handle maxSafe', function() {
+      assert.equal(testdata.integers.maxSafe + 1, add(testdata.integers.maxSafe, 1));
+    });
+    it('should handle minSafe', function() {
+      assert.equal(testdata.integers.minSafe - 1, add(testdata.integers.minSafe, -1));
+    });
+    it('should handle beyondSafe', function() {
+      assert.equal(testdata.integers.beyondSafe + 1, add(testdata.integers.beyondSafe, 1));
+    });
+  });
+
+  describe("single digit integers", function() {
+    const limit = Math.pow(10, 9); // only allow single-digit ints up to this value
+    for(let i=1; i<=limit; ++i) {
+      it(`should handle ${i}`, function() {
+        assert.equal(i, add(i, 0));
+      });
+    }
+  });
+
+  describe("double digit integer", function() {
+    let addVal;
+    before(function() {
+      addVal = 11;
+    });
+    for(let i=-addVal; i<addVal; ++

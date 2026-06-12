@@ -1,0 +1,134 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+  ],
+
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -123456789012345678901234567890
+  },
+  "floats": {
+    "small": 0.00000000000000000000000000000000000000000000000000001,
+    "nan": NaN,
+    "infinity": Infinity,
+    "tinyPositive": 0.000000000000000000000000000000000000000000000000000001,
+    "smallPositive": 0.000000000000000000000000000000000000000000000000000001,
+    "tinyNegative": -0.000000000000000000000000000000000000000000000000000001,
+    "negativeSmall": -0.000000000000000000000000000000000000000000000000000001,
+
+    "positiveEps": 0.00000000000000000000000000000000000000000000000000000000001,
+    "negativeEps": -0.00000000000000000000000000000000000000000000000000000000001,
+
+    "largePositive  "scientificGrid": [
+    [1e1, 1e2, 1e3],
+    [1e-1, 1e-2, 1e-3],
+    [1.1e1, 2.2e2, 3.3e3]
+  ]
+},
+  "arrays": {
+    "oneElement": [1],
+    "twoElements": [1, 2],
+    "threeElements": [1, 2, 3],
+    "four": [1, 2, 3, 4],
+    "five": [1, 2, 3, 4, 5]
+  },
+  "objects": {
+    "empty": {},
+    "single": { "a": 1 },
+    "two": { "a": 1, "b": 2 },
+    "three": { "a": 1, "b": 2, "c": 3 }
+  },
+  "strings": {
+    "single": "a",
+    "double": "ab",
+    "longString": "aa"
+  },
+  "otherValues": {
+    "undefined": undefined,
+    "null": null,
+    "bigint": BigInt("1"),
+    "undefinedInfinity": NaN / 0,
+    "-1/0": -NaN,
+    "stringInfinity": "inf" as any,
+    "stringNegInf": "-inf" as any,
+    "nonNumericString": "abc" as any,
+    "numberInfinity": Infinity,
+    "stringInfinity": "inf",
+    "strWithoutDigits": "123abc",
+    "array": []
+  },
+  "edgeCasesForMath": {
+    "mathPi": Math.PI,
+    "numToString": [""], // => ["0"]
+    "stringNum": ["0"],
+    "numToStr": [""], // => ["0"]
+    "isNaN": [],
+    "isFiniteStr": ["inf", "-inf"], // => ["true", "false"]
+    "isFiniteNum": [0, Infinity, -Infinity], // => ["false", "false", "false"]
+    "isInteger": [0, 1, 2, 1.1, 1.9, 2.1, 2.9, 3.0], // => ["true", "true", "true", "false", "false", "false", "false", "true"]
+    "parseFloat": [""], // => ["0"]
+    "parseInt": [""], // => ["0"]
+    "toFixed": [0.1, 0.2, 0.3], // => ["0.1", "0.2", "0.3"]
+    "toExponential": [0.1, 0.2, 0.3], // => ["0.100000", "0.200000", "0.300000"]
+    "toString": [0.1, 0.2, 0.3] // => ["0.1", "0.2", "0.3"]
+  },
+  "edgeCasesForRoundingAndConversion": {
+    "downRound":  [ 0.1, 0.2, 0.3 ], // => [ 0, 0, 0 ]
+    "upRound":    [ 0.1, 0.2, 0.3 ], // => [ 1, 1, 1 ]
+    "ceil":       [ 0.1, 0.2, 0.3 ], // => [ 1, 1, 1 ]
+    "floor":      [ 0.1, 0.2, 0.3 ], // => [ 0, 0, 0 ]
+    "trunc":      [ 0.1, 0.2, 0.3 ], // => [ 0, 0, 0 ]
+    "round":      [ 0.1, 0.2, 0.3 ], // => [ 0, 0, 0 ]
+    "toPowerOfTen": [ 1.1, 2.2, 3.3 ], // => [ 1, 2, 3 ]
+    "dividedByFive": [ 1.1, 2.2, 3.3 ], // => [ 0, 1, 1 ]
+    "abs":        [ 1.1, 2.2, 3.3 ], // => [ 1, 2, 3 ]
+    "negativeInfinity": [], // => ["-Infinity"]
+    "positiveInfinity": [], // => ["Infinity"]
+    "zero": [], // => ["0"]
+    "notANumber": [], // => ["NaN"]
+    "small": [ 0.1, 0.2, 0.3 ], // => ["0.1", "0.2", "0.3"]
+    "tinyPositive": [ 0.1, 0.2, 0.3 ], // => ["0.1", "0.2", "0.3"]
+    "tinyNegative": [ 0.1, 0.2, 0.3 ], // => ["0.1", "0.2", "0.3"]
+    "positiveEps": [ 0.1, 0.2, 0.3 ], // => ["0.1", "0.2", "0.3"]
+    "negativeEps": [ 0.      ['\n'], // => ["-∞"]
+    "stringInfinity": [ ""         ['\n'], // => ["+∞"]
+    "stringNegInf":   [ "-"        ['\n'], // => ["-∞"]
+    "nonNumericString": [ "abc"    ['\n'], // => ["abc"]
+    "numberInfinity": [ Infinity           ['\n'], // => ["Infinity"]
+    "stringInfinity": [ "inf"              ['\n'], // => ["Infinity"]
+    "strWithoutDigits": [ "123abc"         ['\n'], // => ["123abc"]

@@ -1,0 +1,117 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "boundaries": [
+    0, -0, 1, -1, 0.1, -0.1,
+    1e0, 1e1, 1e2, 1e308, 1e-308,
+    0.0001, 1000000000000,
+    3.141592653589793,
+    2.718281828459045
+  ],
+  "arithmeticHints": {
+    "shouldOverflowAddition": [9007199254740991, 1],
+    "precisionLoss": [0.1, 0.2, 0.30000000000000004],
+    "divisionByTiny": [1, 1e-300],
+    "roundTrip": 0.30000000000000004
+  },
+  "mixedSignArray": [-5, 4, -3, 2, -1, 0, 1, -2, 3, -4, 5],
+  "scientificGrid": [
+    [1e1, 1e2, 1e3],
+    [1e5, 1e5, 1e5],
+    [1e5, 1e5, 1e5],
+    [1e6, 1e6, 1e6],
+    [1e6, 1e6, 1e6]
+  ],
+  "invalidNumericValues": [
+    NaN, Infinity, -Infinity, "NaN", "inf", "+inf", "-inf"
+  ],<|file_sep|><|fim_prefix|>/README.md
+# Numeric Edge Cases Test Suite for Python
+
+This test suite is designed to be run against the `python` implementation of the standard library's [`decimal`](https://docs.python.org/3/library/decimal.html) module.
+
+It tests a number of string and integer boundaries that are not represented as literal values in the specification:
+
+* The lowest and highest safe integers (and floats)
+* Various edge cases with long or very small numbers, including infinities
+* Upper and lower bounds on floating point precision loss
+* A variety of special floating-point values
+* The maximum number of significant digits allowed by the decimal module
+* Various corner cases involving scientific notation
+* Different types of arrays: empty, single-element, multi-element, nested, etc.
+* Array objects whose keys are numbers of gi* Values that cause overflow when used in arithmetic operations.
+* Certain boundary conditions on comparison operators.
+
+## Usage
+
+The test suite itself can be run using `pytest`. It will also generate an HTML report containing the results from each test case.
+
+### Install
+
+```sh
+pip install pytest
+To run the test suite:
+
+```sh
+pytest numeric_edge_cases.py --cov=decimal
+```
+<|fim_suffix|>ven the amount of time
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 }, { "value": "abc" }, { "value": {} }
+  ]
+```
+
+  * The idea here is that some structures may not specify a name which should then result in a different name being generated.
+  * For example, if you create a structure like this:
+    
+      ```js
+      const Struct = require('structured-types');
+      
+      new Struct({
+        value: Number
+      });
+      ```
+  
+    Then even though the type has no properties, its name will still be 'Number' because it cannot determine what the value would look like e.g. 'NumbersWithNanAndInf'.
+  * If the structure does not have one set it will just use the default name: 'Struct'
+ *
+ * @param {Structure} struc The structure to get the name for
+ * @returns {string} The name

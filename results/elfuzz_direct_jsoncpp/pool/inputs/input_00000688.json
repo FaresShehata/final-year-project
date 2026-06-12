@@ -1,0 +1,174 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" },
+      { "name": "FEATURE_FLAGS", "valueFrom": { "configMapKeyRef": { "name": "flags", "key": "json" } } }
+    ]
+  },
+  "users": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Alice",
+      "active": true,
+      "roles": ["admin", "developer"],
+      "score": 98.6,
+      "lastLogin": "2024-11-02T09:15:00Z",
+      "preferences": { "theme": "dark", "notifications": { "email": true, "sms": false, "push": null } },
+      "history": [
+        { "action": "login", "ts": 1730538900 },
+        { "action": "deploy", "ts": 1730539200, "details": { "service": "api", "version": "v2.3.1" } }
+      ]
+    },
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": [],
+      "score": null,
+      "lastLogin": null,
+      "preferences": {}
+    },
+    {
+      "uuid": "c4c1fde1-fce3-41bb-afda-bcb9be7d8ba3",
+      "name": "Charlie",
+      "active": true,
+      "roles": ["developer"],
+      "score": 99.9,
+      "lastLogin": "2024-11-02T09:15:00Z",
+      "preferences": { "theme": null, "notifications": { "email": false, "sms": true, "push": true } },
+      "history": [
+        { "action": "login", "ts": 1730538900 },
+        { "action": "deploy", "ts": 1730539200, "details": { "service": "api", "version": "v2.3.1" } }
+      ]
+    }
+  ],
+  "clusters": {
+    "default": {},
+    "cluster-1": {},
+    "cluster-2": {}
+  },
+  "deploymentConfigurations": {
+    "prod-config": {
+      "images": { "test-image": "example.azurecr.io/example:testimage" },
+      "services": { "web-app": { "type": "LoadBalancer", "portMappings": [{ "containerPort": 80 }] } },
+      "ingress": { "hosts": ["www.example.com"], "tls": [{ "secretName": "my-tls-secret", "hostnames": ["www.example.com"] }] },
+      "replicas": 3,
+      "rollingUpdate": { "maxSurge": 1, "maxUnavailable": 1 },
+      "strategy": "RollingUpdate"
+    },
+    "dev-config": {}
+  },
+  "apps": [
+    { "name": "app-name", "instances": 3, "path": "/path/to/app" },
+    { "name": "another-app", "instances": 2, "path": "/other/path/to/app" }
+  ],
+  "functions": [
+    { "name": "func-name", "runtime": "nodejs14.x", "entrypoint": "./index.handler", "handler": "main.handle", "environmentVariables": {      "parent": -1,
+      "children": [2, 3, 4]
+    },
+    "child1": {
+      "id": 1,
+      "parent": 0,
+      "children": []
+    },
+    "child2": {
+      "id": 2,
+      "parent": 0,
+      "children": [3]
+    },
+    "child3": {
+      "id": 3,
+      "parent": 0,
+      "children": [4]
+    },
+    "grandChild1": {
+      "id": 4,
+      "parent": 3,
+      "children": []
+    },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "mixedArray": [
+    1,
+    "two",
+    3.0,
+    true,
+    false,
+    null,
+    { "key": "value" },
+    [1, [2, [3, [4, [5]]]]],
+    { "nested": { "again": { "andAgain": { "terminal": [] } } } }
+  ],
+  "graph": {
+    "nodes": [
+      { "name": "a", "edges": ["b", "c"] },
+      { "name": "b", "edges": ["a", "c", "d"] },
+      { "name": "c", "edges": [] },
+      { "name": "d", "edges": ["a", "b", "c", "d"] }
+    ],
+    "adjacency": {
+      "a": { "b": 1, "c": 2 },
+      "b": { "a": 2, "c": 1, "d": 3 },
+      "c": { "a": 3, "b": 1, "d": 1 },
+      "d": { "a": 1, "b": 3, "c": 1, "d": 1 }
+<|file_sep|>/src/matrix/index.js
+import deepEqual from 'deep-equal';
+/**
+ * @param {string} name The name of this test case.
+ * @param {*} input The input to feed into the function under test.
+ * @param {*} expected The expected output.
+ */
+export default (name, input, expected) => assert.strictEqual(deepEqual(input, expected), true, `The result is: ${JSON.stringify(input)}\nExpected:\n${JSON.stringify(expected)}`);
+<|file_sep|>/tests/test-decimal.test.ts
+# Decimal Numbers in JavaScript
+This repository contains a collection of tests and code for decimal numbers in JavaScript.
+
+## Running Tests
+Commands are below:
+
+```bash
+npm i && npm run test
+```
+You can also use [Mocha](https://mochajs.org/) directly with [Chai](http://chaijs.com/) assertions:
+```javascript
+const decimal = require('decimal')
+const assert = require('assert')
+
+describe('Decimal Numbers', () => {
+  it('does something', () => {
+    // Add your own assertions here...
+    const bigInt = new BigInt(1e10)
+    assert.deepStrictEqual(decimal.add(bigInt, 0).toString(), '1e+10')
+  })
+})
+```
+
+### Changelog
+See [CHANGELOG.md](./CHANGELOG.md).

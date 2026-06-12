@@ -1,0 +1,111 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": []
+                },
+                {
+                  "id": 4,
+                  "children": [
+                    {
+                      "id": 5,
+                      "children": []
+                    },
+                    {
+                      "id": 6,
+                      "children": [
+                        {
+                          "id": 7,
+                          "children": []
+                        },
+                        {
+                          "id": 8,
+                          "children": [
+                            {
+                              "id": 9,
+                              "children": []
+                            },
+                            {
+                              "id": 10,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "arrays": {
+    "empty": [],
+    "length_1": [true],
+    "length_2": ["foo"],
+    "length_3": [[false]],
+    "nestedArrays": [[[["ignored"]]]]
+  },
+  "strings": {
+    "singleByte": "\u001A",
+    "multiByte": "💖",
+    "unicodeCodepoint": "😂"
+  },
+  "booleanTypes": {
+    "boolTrue": true,
+    "boolFalse": false
+  },
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "exponentGreaterThanLimit": 1e309,
+    "exponentLessThanLimit": 1e-309,
+    "exponentNearLimit": 1e-308,
+    "smallExpPositive": 1e-1000,
+    "smallExpNegative": 1e1000,
+    "expSignedPlus": 6.022e23,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "higherSubNormal": 5e-323,
+    "higherSubNormalish": 5e-324
+  },
+  "mixedSignArray": [-5, 4, -3, 2, -1, 0, 1, -2, 3, -4, 5],
+  "scientificGrid": [
+    [1.23456789e+23, 1.23456789e+22, 1.23456789e+21],
+    [1.23456789e+20, 1.23456789e+19, 1.23456789e+18],
+    [1.23456789e+17, 1.23456789e+16, 1.23456789e+15]
+  }

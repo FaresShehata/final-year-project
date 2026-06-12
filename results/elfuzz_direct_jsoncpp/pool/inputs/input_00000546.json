@@ -1,0 +1,150 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" },
+      { "name": "FEATURE_FLAGS", "valueFrom": { "configMapKeyRef": { "name": "flags", "key": "json" } } }
+    ]
+  },
+  "users": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Alice",
+      "active": true,
+      "roles": ["admin", "developer"],
+      "score": 98.6,
+      "lastLogin": "2024-11-02T09:15:00Z",
+      "preferences": { "theme": "dark", "notifications": { "email": true, "sms": false, "push": null } },
+      "history": [
+        { "action": "login", "ts": 1730538900 },
+        { "action": "deploy", "ts": 1730539200, "details": { "service": "api", "version": "v2.3.1" } }
+      ]
+    },
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": [],
+      "score": 0,
+      "lastLogin": null,
+      "preferences": {},
+      "history": []
+    }
+  ],
+  "metrics": {
+    "node": {
+      "cpu": {
+        "usage": {
+          "total": {
+            "average": 7.81,
+            "max": 9.43,
+            "min": 4.87,
+            "count": 27
+          },
+          "used": {
+            "average": 0.04,
+            "max": 0.04,
+            "min": 0.04,
+            "count": 27
+          },
+          "free": {
+            "average": 7.77,
+            "max": 7.77,
+            "min": 7.77,
+            "count": 27
+          }
+        },
+        "capacity": {
+          "average": 16.67,
+          "max": 16.67,
+          "min": 16.67,
+          "count": 27
+        }
+      },
+      "memory": {
+        "usage": {
+          "total": {
+            "average": 427.54,
+            "max": 427.54,
+            "min": 427.54,
+            "count": 27
+          },
+          "used": {
+            "average": 123.57,
+            "max": 123.57,
+            "min": 123.57,
+            "count": 27
+          },
+          "free": {
+            "average": 204.97,
+            "max": 204.97,
+            "min": 204.97,
+            "count": 27
+          }
+        },
+        "capacity": {
+          "average": 497.67,
+          "max": 497.67,
+          "min": 497.67,
+          "count": 27
+        }
+      }
+    },
+    "pod": {
+      "cpu": {    "tab": "col1\tcol2",
+    "allTogether": "\"\\\/\b\f\n\r\t"
+    },
+    "delete": "\u007f",
+    "latin": "caf\u00e9 na\u00efve r\u00e9sum\u00e9",
+    "greek": "\u03b1\u03b2\u03b3\u03b4\u03b5",
+    "hebrew": "\u05e9\u05dc\u05d5\u05dd",
+    "arabic": "\u0627\u062e\u0632\u062a\u064a\u0640\u0627\u0644\u0629",
+    "thai": "\u0E2A\u0E3F\u0E2D\u0E01\u0E2F\u0E4B\u0E14\u0E2D",
+    "vietnamese": "\u1ea6\u1edd\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u1ea6\u1edd\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0117\u011b\u012b\u1ee1\u011d\u1ead\u0127\u1eed\u1ea6\u1edf\u0112\u0  },
+    "unifiedLatinExtended": {
+      "zeroWidthJoiner": "a\u200d b",
+      "combiningDotAbove": "a\u0307 b",
+      "lowercaseLetterWithDotAbove": "a\u0307",
+      "smallLetterWithDotAbove": "\u02db\u0307"
+    },
+    "exponentPositive": 1.1e+3,
+    "infinity": Infinity,
+    "-Infinity": -Infinity,
+    "nan": NaN,
+    "largeNumber": 1.1e8,
+    "roundDown": Math.round(1.3),
+    "ceil": Math.ceil(-1.3),
+    "floor": Math.floor(1.3),
+    "remainder": 1 % 3,
+    "bigint": BigInt("123"),
+    "decimalSeparator": 0.123,
+    "groupingSeparator": 0,000.1,
+    "currencyCode": "$",
+    "symbolCode": "€",
+    "percentSign": "%"
+  }
+
+}

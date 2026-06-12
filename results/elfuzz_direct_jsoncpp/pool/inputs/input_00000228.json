@@ -1,0 +1,156 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "boundaries": [
+    0, -0, 1, -1, 0.1, -0.1,
+    1e0, 1e1, 1e2, 1e308, 1e-308,
+    0.0001, 1000000000000,
+    3.141592653589793,
+    2.718281828459045
+  ],
+  "arithmeticHints": {
+    "shouldOverflowAddition": [9007199254740991, 1],
+    "precisionLoss": [0.1, 0.2, 0.30000000000000004],
+    "divisionByTiny": [1, 1e-300],
+    "roundTrip": 0.30000000000000004
+  },
+  "mixedSignArray": [-5, 4, -3, 2, -1, 0, 1, -2, 3, -4, 5],
+  "scientificGrid": [
+    [1e1, 1e2, 1e3],
+    [1e5, 1e5, 1e5],
+    [1e5, 1e5, 1e5],
+    [1e6, 1e6, 1e6],
+    [1e6, 1e6, 1e6]
+  ],
+  "invalidNumericValues": [
+    NaN, Infinity, -Infinity, "NaN", "inf", "+inf", "-inf"
+  ],<|file_sep|><|fim_prefix|>/README.md
+# Numeric Edge Cases Test Suite for Python
+
+This test suite is designed to be run against the `python` implementation of the standard library's [`decimal`](https://docs.python.org/3/library/decimal.html) module.
+
+It tests a number of string and integer boundaries that are not represented as literal values in the specification:
+
+* The lowest and highest safe integers (and floats)
+* Arbitrary precision integers that exceed the range of valid integers (`10**308`, `-10**308`)
+* Floating point numbers that are too close to zero to represent them accurately (`1e-308`, `1e308`,
+  etc.)
+* Floating point numbers with leading zeros or trailing fractions.
+* Certain other special cases, like infinities and NaNs.
+* Values that cause overflow when used in arithmetic operations.
+* Certain boundary conditions on comparison operators.
+
+## Usage
+
+The test suite itself can be run using `pytest`. It will also generate an HTML report containing the results from each test case.
+
+For example:
+
+```sh
+$ python3 setup.py install
+$ pytest numerical_edge_cases.py --cov=decimal
+================================== test session starts ===================================================
+platform linux -- Python 3.5.2, pytest-3.6.3, py-1.5.4, pluggy-0.6.0 -- /usr/bin/python3.5
+cachedir: .cache
+rootdir: /home/dustin/projects/decimal-tests, inifile:
+collected 275 items
+
+numerical_edge_cases.py .............                                                                                                                       [ 53%]
+numerical_edge_cases.py ..                                                  [100%]
+
+============================================ FAILURES ==============================================
+______________________________________ test_simple ___________________________
+
+self = <test.test_numeric_edge_cases.NumericEdgeCasesTest object at 0x7f168ff2e448>
+
+    def test_simple(self):
+>       self._assert_num(0.1, 0.1)
+E       assert Decimal('0.1') == Decimal('0.1')
+E        +  where Decimal('0.1') = Decimal('0.1')
+
+./tests/test_numeric_edge_cases.py:103: AssertionError
+---------------------------------- Captured stdout call ----------------------------------
+[...snip...]
+
+==================================== short test summary info ====================================
+FAILED ./tests/test_numeric_edge_cases.py::NumericEdgeCasesTest::test_arithmetic_overflow_1 - assert Dec...
+FAILED ./tests/test_numeric_edge_cases.py::NumericEdgeCasesTest::test_string_too_large_with_leading_zero_s...
+FAILED ./tests/test_numeric_edge_cases.py::NumericEdgeCasesTest::test_decimal_precision_loss - assert De...
+FAILED ./tests/test_numeric_edge_cases.py::NumericEdgeCasesTest::test_integer_exp_negative - assert De...
+FAILED ./tests/test_numeric_edge_cases.py::NumericEdgeCasesTest::test_small_floats - assert De...
+
+```
+
+In addition to running the test suite locally, you can also use it to check whether your local installation of decimal has any regressions by running:
+
+<|file_sep|>/tests/test_numeric_edge_cases.py
+from __future__ import print_function
+
+import copy
+import math
+import re
+import sys
+from collections import OrderedDict
+from decimal import Decimal, getcontext, InvalidOperation, Overflow, RoundedAwayFromZero,\
+    RoundedDown, RoundedEven, RoundedUp, RoundedTowardsZero, RoundedTowardsInf, RoundedTowardsZero,\
+    RoundedTowardsNegInf, contextmanager, DivisionByZero, NotANumber
+
+
+def _get_test_case_count```sh
+pytest numeric_edge_cases.py --cov=decimal
+```
+<|fim_suffix|>ven the amount of time
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 },
+    { "value": "42" },
+  { "value": 1 }, { "value": -1 }
+
+  "edgeCases": [
+    "0.0",
+    "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000    31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50
+
+  "deeplyNestedObjects": {
+    "l1": { "l2": { "l3": { "l4": { "l5": { "l6": { "l7": { "value": "bottom" } } } } } } }
+  },
+
+  "whitespaceStress":{"a":1,"b":2,"c":[1,2,3],"d":{"e":4}},

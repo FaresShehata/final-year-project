@@ -1,0 +1,183 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "namespace": "my-app-nms"
+  },
+  "spec": {
+    "replicas": 3,
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" }, // This can be used to prevent server from becoming full of connections.
+      { "name": "NODE_ENV", "value": "development" } // Adjust the NODE_ENV value here to change env variables for all pods in this app.
+    ]
+  },
+  "template": {
+    "containers": [
+      { "name": "app", "image": "docker.io/my/app:v1.0.0", "command": [], "args": [] },
+      { "name": "db", "image": "postgres:latest", "command": [], "args": [] },
+      { "name": "logs", "image": "docker.io/my/logs:v1.0.0", "command": [], "args": [] }
+    ],
+    "initContainers": [],
+    "volumeMounts": [],
+    "livenessProbe": { "exec": {}, "initialDelaySeconds": 30, "periodSeconds": 10 },
+    "readinessProbe": { "tcpSocket": {}, "initialDelaySeconds": 30, "timeoutSeconds": 1 },
+    "startupProbe": { "tcpSocket": {} },
+    "terminationMessagePath": "/dev/termination-log",
+    "terminationMessagePolicy": "File",
+    "dnsConfig": {},
+    "dnsPolicy": "ClusterFirst",
+    "securityContext": { "runAsUser": 0 },
+    "fsGroup": 2000,
+    "readOnlyRootFilesystem": false,
+    "terminationGracePeriodSeconds": 300,
+    "restartPolicy": "Always",
+    "schedulerName": "",
+    "tolerations": []
+  },
+  "strategy": {
+    "type": "RollingUpdate",
+    "rollingUpdate": { "maxUnavailable": 3, "maxSurge": 3 }
+  },
+  "status": {
+    "observedGeneration": 17,
+    "readyReplicas": 3,
+    "availableReplicas": 3,
+    "unavailableReplicas": 0,
+    "updatedReplicas": 3,
+    "fullyLabeledReplicas": 3,
+    "podsScheduled": 3,
+    "podReadyReplicas": 3,
+    "minReadySeconds": 0,
+    "observedGeneration": 17,
+    "availableReplicas": 3,
+    "unavailableReplicas": 0,
+    "updatedReplicas": 3,
+    "fullyLabeledReplicas": 3,
+    "podsScheduled": 3,
+    "podReadyReplicas": 3
+  },
+  "selector": {
+    "matchLabels": {
+      "app.kubernetes.io/name": "my-app",
+           "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "notReadyPods": []
+  },
+  "statusReasons": {
+    "current": "New",
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "unknown": "Unknown"
+  },
+  "simple": "hello world",
+  "withSpaces": "   leading and trailing   ",
+  "escapes": {
+    "quote": "she said \"hi\"",
+    "backslash": "path\\to\\file",
+    "slash": "a\/b\/c",
+    "backspace": "x\by",
+    "formfeed": "x\fy",
+    "newline": "line1\nline2",
+    "carriageReturn": "r1\rr2",
+    "tab": "col1\tcol2",
+    "allTogether": "\"\\\/\b\f\n\r\t"
+  },
+  "unicodeEscapes": {
+    "basic": "\u0041\u0042\u0043",
+    "nullChar": "\u0000",
+    "controlCharacter": "\u0007",
+    "surrogatePair": "\uD800\uDDEE",
+    "singleSurrogate": "\uD800",
+    "doubleSurrogate": "\uDDEE\uD800"
+  },
+  "keysWithSpecialChars": {
+    "key with spaces": 1,
+    "key\twith\ttabs": 2,
+    "key.with.dots": 3,
+    "key-with-dashes": 4,
+    "key/with/slashes": 5,
+    "key.with.*stars": 6,
+    "key.with?questionmarks": 7,
+    "key.with#hashes": 8,
+    "key.with$signs": 9,
+    "key.with&amp;ampersands": 10,
+    "key.with*asterisks": 11,
+    "key.with%percentages": 12,
+    "key.with+plus signs": 13,
+    "key.with=equal signs": 14,
+    "key.with()parentheses": 15,
+    "key.with{}curly braces": 16,
+    "key.with[]brackets": 17,
+    "key.with<>angle brackets": 18,
+    "key.with|vertical bars": 19,
+    "key.with~tilde": 20,
+    "key.with^caret": 21,
+    "key.with_underscore": 22,
+    "key.with@at sign": 23,
+    "key.with#, comma": 24,
+    "key.with;, semicolon": 25,
+    "key.with:, colon": 26,
+    "key.with:, colon (escaped)": "\\:",
+    "key.with:", ":",
+    "key.with?, question mark": "?",
+    "key.with?: question mark (escaped)": "\\?",
+    "key.with!, exclamation mark": "!",
+    "key.with!: exclamation mark (escaped)": "\\!"
+<|file_sep|>/pkg/api/pod.go
+package api
+
+import (
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// Label constants
+const (
+	AppLabelKey = "app.kubernetes.io/name"
+)
+
+// Pod is a Kubernetes pod resource.
+type Pod struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec     PodSpec       `json:"spec,omitempty"`
+	Status   PodStatus     `json:"status,omitempty"`
+	HostNode Node          `json:"host_node,omitempty"`
+	Config   *PodConfigMap `json:"config,omitempty"`
+}
+
+func (p *Pod) GetUID() string { return p.UID }
+
+// Equal returns true if two Pods are equal.
+func (p *Pod) Equal(o *Pod) bool {
+	if o == nil || p == nil {
+		return false
+	}
+	return p.UID == o.UID &&  },
+  "arrayOfStrings": ["", "a", "ab", "abc", "\n", "\u0000", "😀", "café"]
+}
+

@@ -1,0 +1,110 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": [
+                    { "id": 4, "children": [], "leaf": true }
+                  ],
+                  "meta": { "depth": 4, "path": [0, 1, 2, 3] }
+                }
+              ],
+              "siblings": { "left": null, "right": { "ref": "#/root/node/children/0/children/0/children/1" } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "data": {
+<|file_sep|>/java/src/main/java/com/yahoo/deeplynestedrecursive/model.java
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+
+@XmlAccessorType(XmlAccessType.FIELD)
+public class model {
+
+    @XmlElement(name = "test")
+    public String test = "";
+
+}<|file_sep|>/python/test.py
+# Deeply NESTED Recursive
+
+Deeply nested recursive data structure for parsing and manipulating XML documents. It is designed to be heavily optimized for performance in a large number of use cases.
+
+## Why do I need this?
+
+I needed to parse and manipulate large XML files that had many deeply nested elements and attributes. The Java libraries such as `javax.xml.parsers` and `org.w3c.dom` were not sufficient for my needs because they did not support deep recursion (they have no way to traverse the entire tree) or allowed you only to read and write to the top-level elements which was not enough for me. So, I wrote this library to provide an efficient solution to my problem.
+
+The original implementation used C++, but it turned out to be too slow and heavy-weight to fit into our production environment so we decided to rewrite it from scratch using Rust instead. You can find the original source code at <https://github.com/dankor/stax>. 
+
+## How does it work?
+
+The library uses a set of custom recursive data structures called "nodes". Each node represents either a leaf element or a non-leaf element with its children and siblings. The nodes are stored in a binary search tree-like structure called "the root". 
+
+In order to get to a specific node, one must navigate through all of its ancestors. We achieve this by maintaining a stack of pointers to each ancestor's parent node during traversal. Every time we reach a new node, we push its pointer onto the stack and update the current pointer to point to the newly visited node. When we want to go back up the hierarchy, we simply pop the last element off the stack and reset the current pointer to point to the next sibling of the popped node. This allows us to efficiently traverse the entire tree without needing to store the entire subtree in memory at once.
+
+We also optimize the traversal process by using two additional data structures: a matrix and a data object. The matrix stores information about how to navigate between adjacent nodes. In other words, it tells us what child node comes immediately after a given node. The data object contains any data associated with the currently traversing node, such as text content or attribute values.
+
+Finally, we employ caching techniques to avoid repeatedly traversing the same part of the tree when multiple paths lead to the same node. By keeping track of which nodes have already been visited, we can quickly skip over them if we encounter them again later on during traversal.
+
+
+## Example usage
+
+
+```java
+// Create a new instance of the Node class with some initial data.
+Node node = new Node("hello");
+
+// Create a new instance of the Matrix class to help us move around the Node objects.
+Matrix matrix = new Matrix();
+
+// Add a new row to the Matrix object that will allow us to retrieve the next sibling of a Node object.
+matrix.addRow(new Row(0));
+
+// Set the first column of the row to point to the Node object itself.
+matrix.setCell(0, 0, node);
+
+// Start traversing down the tree from the root Node object.
+while (!stack.isEmpty()) {
+    // Get the current Node object from the stack.
+    Node currentNode = stack.peek();
+    
+    // Check if we've reached the end of the tree; if so, break out of the loop early.
+    if (currentNode == null) {
+        break;
+    }
+
+    // Otherwise, check if we've already visited this Node object before; if so, continue on to the next iteration of the loop.
+    if (visited.contains(currentNode)) {
+        continue;
+    }
+
+    // Mark the current Node object as having been visited so we don't revisit it later on.
+    visited.add(currentNode);
+    
+    // Traverse down the tree further, following the next sibling of the current Node object.
+    while (!visited.contains(matrix.getNextSibling(currentNode))) {
+        // If there isn't a next sibling available, then break out of the inner loop and try finding another path through the tree.
+        if (matrix.getNextSibling(currentNode) == null) {
+            break;
+        }
+        
+        // Otherwise, add the next sibling to the stack so we can keep going deeper in the tree.
+        stack.push(matrix.getNextSibling(currentNode));

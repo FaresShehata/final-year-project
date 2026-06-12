@@ -1,0 +1,190 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" },
+      { "name": "FEATURE_FLAGS", "valueFrom": { "configMapKeyRef": { "name": "flags", "key": "json" } } }
+    ]
+  },
+  "users": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Alice",
+      "active": true,
+      "roles": ["admin", "developer"],
+      "score": 98.6,
+      "lastLogin": "2024-11-02T09:15:00Z",
+      "preferences": { "theme": "dark", "notifications": { "email": true, "sms": false, "push": null } },
+      "history": [
+        { "action": "login", "ts": 1730538900 },
+        { "action": "deploy", "ts": 1730539200, "details": { "service": "api", "version": "v2.3.1" } }
+      ]
+    },
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": [],
+      "score": 0,
+      "lastLogin": null,
+      "preferences": {},
+      "history": []
+  <|file_sep|>/README.md
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+
+const config = JSON.parse(process.env.REACT_APP_CONFIG);
+const apiUrl = `${config.apiUrl}/api`;
+
+// NOTE: This is a temporary solution until we get our UI set up with dynamic routes.
+// Right now, we just need to ensure that the URL starts with '/'. Otherwise, the
+// homepage won't render correctly.
+if (window.location.pathname !== '/') {
+  window.location.href = '/';
+}
+
+const validateToken = token => !!token && typeof token === 'string' && token.length > 0;
+
+const ThemedContent = props => (
+  <UserContextConsumer>
+    {userProps =>
+      <ConfigContextConsumer>
+        {configProps => <props.children theme={configProps.theme} />}
+      </ConfigContextConsumer>
+    }
+  </UserContextConsumer>
+);
+
+const App = () => {
+  return (
+    <>
+      <ThemedContent>
+        <RootLayout />
+      </ThemedContent>
+    </>
+  );
+};
+
+ReactDOM.render(<App />, document.getElementById('root'));
+
+function RootLayout() {
+  const user = useUser();
+  const config = useConfig();
+
+  if (!validateToken(user.token)) {
+    return <h1>Invalid session</h1>;
+  }
+
+  return (
+    <div className="container">
+      <h1>Welcome, {user.name}</h1>
+
+      <p>You are logged in as {user.roles.join(', ')}. Here's your account info:</p>
+      
+      <pre>{JSON.stringify(config)}</pre>
+    </div>
+  );
+}
+<|file_sep|>/src/App.js
+# Example Azure Kubernetes Service load balancer configuration
+
+This example shows how to configure an example LoadBalancer service into Azure AKS.
+
+## Prerequisites
+
+* You must have an existing AKS cluster.
+* You must have a public IP address in your subscription.
+* You must have an existing load balancer resource in your subscription.
+
+**Note:** If you don't already have an existing AKS cluster, you can create one by following the instructions in [Creating an AKS cluster](https://learn.microsoft.com/en-us/azure/aks/tutorial-kubernetes-deploy-application).
+
+You'll also need to go through the process of creating a public IP address and load balancer resource first. For more information about creating resources using Azure CLI commands, see [Using Azure CLI commands for managing Azure resources](https://learn.microsoft.com/en-us/cli/azure/manage-azure-resources?view=azure-cli-latest#getting-started-with-resource-groups-and-subscriptions).
+
+## Configure an AKS load balancer service
+
+Follow the steps below to configure the AKS load balancer service:
+
+### Create a new AKS cluster
+
+If you don't already have an existing AKS cluster, follow these steps to create one:
+```bash
+az group create --location westus --name myResourceGroup
+
+az aks create \
+    --resource-group=myResourceGroup \
+    --name=myAKSCluster \
+    --node-count=1 \
+    --generate-ssh-keys \
+    --kubernetes-version=1.29.2 \
+    --enable-addons monitoring \
+    --network-plugin azure
+```
+Once the command completes successfully, output will look similar to the following:
+```
+{
+  "aadProfile": null,
+  "addonProfiles": {
+    "monitoring": {
+      "config": {
+        "clusterMonitoring": true,
+        "kubeDashboard": true
+      },
+      "disabled": false,
+      "enabled": true
+    },
+    "security": {
+      "config": null,
+      "disabled": false,
+      "enabled": true
+    }
+  },
+  "agentPoolProfiles": [
+    {
+      "count": 1,
+      "maxPods": 110,
+      "mode": "System",
+      "osDiskSizeGB": 30,
+      "osType": "Linux",
+      "provisioningState": "Succeeded",
+      "restartAction": "TerminationGracePeriod",
+      "vmSize": "Standard_DS2_v2"
+    }
+  ],
+  "availabilityProfile": "Manual",
+  "disableRbac": null,
+  "dnsPrefix": "myakscluster",
+  "fqUse CTRL+C to exit
+```
+
+The default `kubectl` context will now switch to the load-balancer service you've configured.
+
+## Building the image
+
+To build the Docker image, follow these steps:
+
+1. Clone this repository:
+    ```sh

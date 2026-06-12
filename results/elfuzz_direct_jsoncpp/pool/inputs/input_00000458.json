@@ -1,0 +1,280 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": ["a", "b", "a"],
+
+  "empty": "",
+  "simple": "hello world",
+  "withSpaces": "   leading and trailing   ",
+  "escapes": {
+    "quote": "she said \"hi\"",
+    "backslash": "path\\to\\file",
+    "slash": "a\/b\/c",
+    "backspace": "x\by",
+    "formfeed": "x\fy",
+    "newline": "line1\nline2",
+    "carriageReturn": "r1\rr2",
+    "tab": "\tx\ty"
+  },
+  "whitespaceCharacters": {
+    "\n": "new line",
+    "\t": "horizontal tabulation",
+    "\v": "vertical tabulation",
+    "\f": "form feed",
+    "\r": "carriage return",
+    "\\": "back slash",
+    '"': "double quote",
+    "'": "single quote",
+    "`": "grave accent"
+  },
+  "numbers": {
+    "integers": [
+      "0", "-1", "+35",
+      "1986", "7_453"
+    ],
+    // TODO: implement scientific notation
+    "floats": [
+      "3.14", ".123", "-1E+35",
+      "+9e-35", "35.", "9.99E-35"
+    ]
+  },
+  "alphanumeric": {
+    "letters": ["a", "z"],
+    "digits": ["0", "9"],
+    "all": ["a", "z", "0", "9"]
+  },
+  "boolean": ["true", "false"],
+  "infinity": {
+    "positive": 1.7976931348623157e308,
+    "negative": -1.7976931348623157e308
+  },
+  "null": null,
+
+  "sizeCollisionMap": [1, 2],
+  "nullableSizeCollisionMap": [{}, {}],
+
+  "string": {
+    "utf8": "Hello\u00A0World!",
+    "ascii": "Hello World!"
+  },
+  "json": {
+    "object": {
+      "key": "value"
+    },
+    "array": ["apple", "banana", "cherry"],
+    "number": 42,
+    "boolean": true,
+    "undefined": undefined,
+    "function": function() {},
+    "bigint": BigInt("123"),
+    "symbol": Symbol(),
+    "date": new Date(2018, 11, 1)
+  },
+  "circular": {
+    "__proto__": {
+      "arr": [1, 2, 3]
+    }
+  },
+
+  "arrays": {
+    "splat": [..."abc", ...[1, 2]],
+    "mixed": [1, "foo", { a: 1 }, ...["bar"]]
+  },
+  "sets": {
+    "empty": new Set(),
+    "splat": new Set([..."abc", ...[...{ a: 1 }]])
+  },
+  "maps": {
+    "empty": new Map(),
+    "set": new Map([["a", 1], ["b", 2]]),
+    "mix": new Map([
+      ["a", 1],
+      ["b", 2],
+      ["c", 3]
+    ])
+  },
+
+  "regularExpressions": {
+    "literal": /.+/g,
+    "grouped": /(?<year>\d{4})-(?<month>[01]\d)-(?<day>\d\d)/,
+    "namedCaptureGroups": /(?:^|[^%])%(?:(?!(?:%%)*)%|%)(?<arg>\w+)/g,
+    "unicodeProperties": /\p{Alphabetic}/u,
+    "unicodePropertyEscape": /[\p{Alphabetic}\p{Number}]/gu
+  },
+
+  "regexes": {
+    "match": "hello world".match(/world/),
+    "search": "hello world".search(/world/),
+    "replace": "hello world".replace      {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "readOnly": true,
+        "subPath": "",
+        "name": "default-token-hzslj"
+      }
+    ],
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/health/liveness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/health/readiness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "env": [],
+    "resources": {
+      "requests": {
+        "cpu": "100m",
+        "memory": "128Mi",
+        "ephemeral-storage": "5Gi"
+      },
+      "limits": {
+        "cpu": "1",
+        "memory": "2Gi",
+        "ephemeral-storage": "10Gi"
+      }
+    },
+    "volumeMounts": [{
+      "name": "my-volume",
+      "mountPath": "/mnt/my-volume",
+      "subPath": ""
+    }],
+    "tolerations": [{
+      "key": "node.kubernetes.io/not-ready",
+      "operator": "Exists",
+      "effect": "NoExecute",
+      "tolerationSeconds": 300
+    }]
+  },
+
+  "k8sConfigMaps": {
+    "none": {},
+    "oneEntry": {
+      "data": {
+        "entryKey": "entryValue"
+      }
+    },
+    "manyEntries": {
+      "data": {
+        "entryKey": "entryValue",
+        "otherKey": "otherValue"
+      }
+    }
+  },
+
+  "k8sServices": {
+    "none": {},
+    "redirectingToClusterIP": {
+      "spec": {
+        "ports": [
+          {
+            "protocol": "TCP",
+            "targetPort": 80,
+            "name": "http",
+            "port": 80
+          }
+        ],
+        "selector": {
+          "app": "test-app"
+        },
+        "clusterIP": "None",
+        "externalTrafficPolicy": "Local",
+        "sessionAffinity": "None",
+        "type": "LoadBalancer"
+      }
+    },
+    "withExternalName": {
+      "metadata": {
+        "name": "foo-service",
+        "namespace": "default"
+      },
+      "spec": {
+        "ports": [
+          {
+            "protocol": "TCP",
+            "targetPort": 80,
+            "name": "http",
+            "port": 80
+          }
+        ],
+        "selector": {
+          "app": "test-app"
+        },
+        "clusterIP": "None",
+        "externalTrafficPolicy": "Local",
+        "sessionAffinity": "None",
+        "type": "ExternalName",
+        "externalName": "foo.example.com"
+      }
+    },
+    "withNodePorts": {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "app": "wordpress"
+        },
+        "name": "wordpress",
+        "namespace": "default"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "mysql",
+            "port": 3306,
+            "targetPort": 33      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "env": [],
+    "resources": {
+      "requests": {
+        "cpu": "2000m",
+        "memory": "4Gi"
+      },
+      "limits": {
+        "cpu": "500m",
+        "memory": "1Gi"
+      }
+    },
+    "securityContext": {
+      "capabilities": {
+        "add": [],
+        "drop": []
+      },
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      },
+      "runAsUser": -1,
+      "fsGroup": -1,
+      "fsGroupChangePolicy": "Always",
+      "allowPrivilegeEscalation": false,
+      "privileged": false,
+      "readOnlyRootFilesystem": false,
+      "procMount": "Default",
+      "windowsOptions": {
+        "gid": -1,
+        "startupInfo": {}
+      }
+    },
+    "ttlSeconds": 0,
+    "sidecars": [],
+    "initContainers": [],
+    "pods": [],
+    "containers": [
+     

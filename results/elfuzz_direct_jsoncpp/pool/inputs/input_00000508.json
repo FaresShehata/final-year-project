@@ -1,0 +1,64 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 },
+    { "value": "42" },
+    { "value": 42.0 },
+    { "value": true },
+    { "value": null },
+    { "value": [42] },
+    { "value": { "n": 42 } }
+  ],
+
+  "whitespaceStress":{"a":1,"b":2,"c":[1,2,3],"d":{"e":4}},
+
+  "wideObject": {
+    "f0": 0, "f1": 1, "f2": 2, "f3": 3, "f4": 4,
+    "f5": 5, "f6": 6, "f7": 7, "f8": 8, "f9": 9,
+    "f10": 10, "f11": 11, "f12": 12, "f13": 13, "f14": 14,
+    "f15": 15, "f16": 16, "f17": 17, "f18": 18, "f19": 19
+  },
+
+  "complexStructures": {
+    "simpleObject": { "key": "value" },
+    "extraProp": {},
+    "anotherProperty": "",
+    "arrayOfStrings": ["foo", "bar"],
+    "anArrayOfNumbers": [1, 2, 3, 4, 5],
+    "someMoreProperties": {"x": 42},
+    "nestedObjects": {"y": 42}
+  },
+
+
+  "numbers": {
+    "integerWithLeadingZeroes": 00,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "positiveInfinity": Infinity,
+    "negativeInfinity": -Infinity,
+    "notANumber": NaN,
+    "NaNString": "NaN",
+    "largeValue": 1.79e+308,
+    "largeValueNegated": -1.79e+308,
+    "smallValue": 2.225e-308,
+    "smallValueNegated": -2.225e-308
+  }
+}
+
+/* vim: set expandtab tabstop=2 shiftwidth=2 softtabstop=2: */

@@ -1,0 +1,129 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" },
+      { "name": "FEATURE_FLAGS", "valueFrom": { "configMapKeyRef": { "name": "flags", "key": "json" } } }
+    ],
+    "initContainers": [
+      { "name": "init-db", "image": "postgres:latest", "command": ["bash", "-c", "psql -U postgres -c 'CREATE DATABASE my_db' && exit 0 || exit 1"] }
+    ],
+    "containers": [
+      { "name": "api-server", "image": "my-api-image:v1.0.0", "livenessProbe": { "tcpSocket": { "port": 50051 }, "initialDelaySeconds": 30, "timeoutSeconds": 10, "periodSeconds": 15, "failureThreshold": 3, "successThreshold": 1 } },
+      { "name": "worker", "image": "my-worker-image:v1.0.0", "livenessProbe": { "exec": { "command": ["/bin/sh", "-c", "/app/health.sh"] }, "initialDelaySeconds": 60, "timeoutSeconds": 15, "periodSeconds": 30, "failureThreshold": 3, "successThreshold": 1 } }
+    ],
+    "persistence": {
+      "dataDir": { "size": "10Gi", "type": "standard" },
+      "logsDir": { "size": "5Mi", "type": "ephemeral" }
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "status": "True",
+        "message": "The resource has been successfully created.",
+        "reason": "Created",
+        "startedAt": "2024-11-03T14:22:01.123Z",
+        "updatedAt": "2024-12-03T14:22:01.123Z",
+        "observedGeneration": 17,
+        "resourceVersion": "17",
+        "uid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      }
+    ],
+    "replicas": 3,
+    "readyReplicas": 3,
+    "updatedReplicas": 3,
+    "availableReplicas": 3
+  },
+  "toReconcile": true,
+  "accounts": [],
+  "users": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Alice",
+      "active": true,
+      "roles": ["admin", "developer"],
+      "score": 98.6,
+      "lastLogin": "2024-11-02T09:15:00Z",
+      "preferences": { "theme": "dark", "notifications": { "email": true, "sms": false, "push": null } },
+      "history": [
+        { "action": "login", "ts": 1730538900 },
+        { "action": "deploy", "ts": 1730539200, "details": { "service": "api", "version": "v2.3.1" } }
+      ]
+    },
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": [],
+      "score": 0,
+      "lastLogin": null,
+      "preferences": {},
+      "history": []
+    }
+  ],
+  "metrics": {
+    "requests": { "total": 1048576, "perSecond": 245.7, "errorRate": 0.0023 },
+    "latencyPercentiles": { "p50": 12.3, "p90": 45.6, "p99": 198.4, "p999": 1024.0 },
+    "timeseries": [
+      [1730538000, 100], [1730538060, 105], [1730538120, 98],
+      [1730538180, 110], [1730538240, 95]
+    ]
+  },
+  "featureMatrix": {
+    "auth": { "oauth": true, "saml": true, "ldap": false, "providers": ["google", "github", "okta"] },
+    "storage": { "encrypted": true, "backends": ["s3", "gcs"], "retention": { "days": 90, "archive": true } },
+    "experimental": { "betaFeatures": null, "flags": { "a": 1, "b": 0, "c": -1 } }
+  },
+  "deployment": {
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "minReplicaCount": 1,
+    "maxReplicaCount": 5,
+    "serviceAccountName": "default",
+    "targetPort": 8080,
+    "port": 8080,
+    "imagePullSecrets": [],
+    "extraEnvVars": [
+      {"name":"MY_VAR","value":"my_value"},
+      {"name":"OTHER_VAR","valueFrom":{"secretKeyRef":{"key":"some_secret_key","name":"my-secret"}}}
+    ],
+    "resources": {},
+    "proxyConfig": {
+      "httpProxy": "",
+      "httpsProxy": ""
+    },
+    "logLevel": "info"
+  }
+}
+
+
+// This is a comment
+
+/*
+This is also a comment
+*/

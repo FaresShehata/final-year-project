@@ -1,0 +1,160 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "arrays": {
+    "empty": [],
+    "single": [1],
+    "double": [1, 2],
+    "three": [1, 2, 3],
+    "four": [1, 2, 3, 4],
+    "five": [1, 2, 3, 4, 5]
+  },
+  "objects": {
+    "empty": {},
+    "single": { "a": 1 },
+    "two": { "a": 1, "b": 2 },
+    "three": { "a": 1, "b": 2, "c": 3 }
+  },
+  "mathOperations": {
+    "addition": [
+      [1, 2], // normal
+      ["1", "2"], // string concat
+      [-1, "-2"] // negative numbers not allowed in math operators
+    ],
+    "multiplication": [
+      [1, 2], // normal
+      ["1", "2"], // string concat
+      ["1", null] // null and undefined aren't allowed, but number string is fine.
+    ],
+    "exponentiation": [
+      [1, 2], // normal
+      ["1", "2"] // string concat
+    ],
+    "modulus": [
+      [1, 2], // normal
+      ["1", "2"], // string concat
+      ["1", null] // null and undefined aren't allowed, but number string is fine.
+    ]
+  },
+  "stringFunctions": {
+    "concat": [
+      ["1", "2"], // string concat
+      ["abc", "def"]
+    ],
+    "repeat": [["1", 3]],
+    "slice": [["hello world", 3, 10]],
+    "split": [["Hello, World!", ","], ","],
+    "substring": [["Hello", 1, 3]],
+    "substr": [["Hello", 1, 3]],
+    "toLowerCase": [["AbC"]],
+    "toUpperCase": [["AbC"]]
+  },
+  "booleanFunctions": {
+    "and": [true, true, false, false],
+    "or": [true, false, true, false],
+    "xor": [true, false, true, false],
+    "not": [false, true]
+  },
+  "comparisonOperators": {
+    "equality": [1, 1, 1, 2, 2, 1],
+    "inequality": [1, 1, 1, 2, 2, 2],
+    "lessThan": [1, 1, 2, 2, 1, 1],
+    "greaterThan": [1, 1, 2, 2, 2, 1],
+    "strictLessThan": [1, 1, 2, 2, 1, 1],
+    "strictGreaterThan": [1, 1, 2, 2, 2, 1]
+  },
+  "conditionalOperator": ["?", ":", "1 > 2 ? 'yes' : 'no'"],
+  "bitwiseOperators": {
+    "bitwiseOr": [1, 1, 2, 2, 1, 1],
+    "bitwiseAnd": [1, 1, 2, 2, 1, 1],
+    "bitwiseXor": [1, 1, 2, 2, 1, 1],
+    "bitLeftShift": [1, 1, 2, 2, 1, 1],
+    "bitRightShift": [1, 1, 2, 2, 1, 1],
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+  ],
+
+  "longHomogeneousArray": [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 },
+    { "value": "42" },
+    { "value": 42.0 },
+    { "value": true },
+    { "value": null },
+    { "value": [42] },
+    { "value": { "n": 42 } }
+  ],
+
+},
+  "keyStress": {
+
+  "propertiesOnly": {
+    "foo": 0,
+    "bar": 1,
+    "baz": 2
+  },
+    "undefined": 1,
+    "null": 1,
+  },
+
+  "precision": {
+    "integers": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "smallFloats": [0.1, 0.2, 0.3],
+    "largeFloats": [1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
+    "fractionalIntegers": [1/3, 1/2, 1/1.1, 1/1.01, 1/1.001, 1/0.999, 1/0.99, 1/0.9, 1/0.1, 1/0.01, 1/0.001],
+    "maxDoublePrecision": 1.7976931348623157e308,
+    "minDoublePrecision": 4.9406564584124654e-324,
+<|file_sep|><|fim_prefix|>/src/examples/negative-power-of-double.js
+import { print } from '../utils/print';
+
+const x = 2 ** -1;
+const y = 0.5;
+
+console.log('x:', x); // 0.5
+console.log('y:', y); // 0.5
+
+print(y);
+<|fim_middle|>print(

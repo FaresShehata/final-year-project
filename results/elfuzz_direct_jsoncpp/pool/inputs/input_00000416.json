@@ -1,0 +1,173 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "namespace": "my-app-nms"
+  },
+  "spec": {
+    "replicas": 3,
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" }, // This can be used to prevent server from becoming full of connections.
+      { "name": "NODE_ENV", "value": "development" } // Adjust the NODE_ENV value here to change env variables for all pods in this app.
+    ]
+  },
+  "template": {
+    "containers": [
+      { "name": "app", "image": "docker.io/my/app:v1.0.0", "command": [], "args": [] },
+      { "name": "db", "image": "postgres:latest", "command": [], "args": [] },
+      { "name": "logs", "image": "docker.io/my/logs:v1.0.0", "command": [], "args": [] }
+    ],
+    "initContainers": [],
+    "volumeMounts": [],
+    "livenessProbe": { "exec": {}, "initialDelaySeconds": 30, "periodSeconds": 10 },
+    "readinessProbe": { "tcpSocket": {}, "initialDelaySeconds": 30, "timeoutSeconds": 1 },
+    "startupProbe": { "tcpSocket": {} },
+    "terminationMessagePath": "/dev/termination-log",
+    "terminationMessagePolicy": "File",
+    "dnsConfig": {},
+    "dnsPolicy": "ClusterFirst",
+    "securityContext": { "runAsUser": 0 },
+    "fsGroup": 2000,
+    "readOnlyRootFilesystem": false,
+    "terminationGracePeriodSeconds": 300,
+    "restartPolicy": "Always",
+    "schedulerName": "",
+    "tolerations": []
+  },
+  "strategy": {
+    "type": "RollingUpdate",
+    "rollingUpdate": { "maxUnavailable": 3, "maxSurge": 3 }
+  },
+  "status": {
+    "observedGeneration": 17,
+    "readyReplicas": 3,
+    "availableReplicas": 3,
+    "unavailableReplicas": 0,
+    "updatedReplicas": 3,
+    "fullyLabeledReplicas": 3,
+    "podsScheduled": 3,
+    "podReadyReplicas": 3,
+    "minReadySeconds": 0,
+    "observedGeneration": 17,
+    "availableReplicas": 3,
+    "unavailableReplicas": 0,
+    "updatedReplicas": 3,
+    "conditions": [
+      { "type": "Progressing", "status": "True", "reason": "NewReplicaSetAvailable", "message": "", "lastUpdateTime": "2024-11-03T14:22:01.123Z" }
+    ]
+  },
+  "controller": {
+    "generation": 17,
+    "updating": false,
+    "desiredReplicas": 3,
+    "currentReplicas": 3,
+    "scaleStatus": {
+      "replicas": 3,
+      "sizeHistory": [
+        { "time": "2024-11-03T14:22:01.123Z", "count": 3, "utilization": "" },
+        { "time": "2024-11-03T14:22:01.123Z", "count": 3, "utilization": "" }
+      ]
+    },
+    "selector": { "matchLabels": { "app.kubernetes.io/name": "my-app", "app.kubernetes.io/version": "v1.0.0" } }
+  },
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "maxReplicas": 5,
+    "minReplicas": 1,
+    "updateStrategy": {
+      "message": ""
+    },
+    "strategy": {
+      "rollingUpdate": {
+        "partition": 0
+      },
+      "recreate": {}
+    },
+    "template": {
+      "metaTemplate": {
+        "name": "my-app",
+        "releaseName": "my-release",
+        "namespace": "my-ns",
+        "imagePullSecrets": null
+      },
+      "templateSpec": {
+        "serviceAccount": null,
+        "securityContext": {
+          "runAsUser": 1000,
+          "fsGroup": 1000
+        },
+        "containers": [{
+          "name": "my-container",
+          "image": "my-image",
+          "resources": {
+            "limits": { "cpu": "100m", "memory": "50Mi" },
+            "requests": { "cpu": "0.5", "memory": "50Mi" }
+          },
+          "ports": [{ "containerPort": 80 }],
+          "envFrom": [
+            { 
+              "configMapRef": { "name": "my-config-map" }, 
+              "secretRef": { "name": "my-secret" }
+            }
+          ],
+          "env": [
+            { "name": "MY_VAR", "value": "my-value" },
+            { "name": "PORT", "value": "8080" }
+          ],
+          "livenessProbe": {
+            "httpGet": { "path": "/healthz", "port": 80 },
+            "initialDelaySeconds": 30,
+            "periodSeconds": 30,
+            "timeoutSeconds": 5,
+            "failureThreshold": 3,
+            "successThreshold": 1
+          },
+          "readinessProbe": {
+            "httpGet": { "path": "/readyz", "port":    },
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": [],
+      "score": 0,
+      "lastLogin": null,
+      "preferences": {},
+      "history": []
+    }
+  ],
+  "metrics": {
+    "requests": { "total": 1048576, "perSecond": 245.7, "errorRate": 0.0023 },
+    "latencyPercentiles": { "p50": 12.3, "p90": 45.6, "p99": 198.4, "p999": 1024.0 },
+    "timeseries": [
+      [1730538000, 100], [1730538060, 105], [1730538120, 98],
+      [1730538180, 110], [1730538240, 95] ...
+    ]
+  }
+}
+},
+"version": "2024.11"

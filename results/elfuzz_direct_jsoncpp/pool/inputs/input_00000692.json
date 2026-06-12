@@ -1,0 +1,83 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+  ],
+
+  "integers": {
+    "zero": 0,
+    "one": 1,
+    "positiveInteger": 4294967296,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "arrays": {
+    "empty": [],
+    "single": [1],
+    "double": [1, 2],
+    "five": [1, 2, 3, 4, 5]
+  },
+  "objects": {
+    "empty": {},
+    "single": { "a": 1 },
+    "two": { "a": 1, "b": 2 },
+    "three": { "a": 1, "b": 2, "c": 3 }
+  },
+  "mathOperations": {
+    "addition": [
+      [1, 2], // normal
+      ["1", "2"], // string concatenation
+      [1, "2"] // string concatenation
+    ],
+    "subtraction": [
+      [1, 2], // normal
+      ["1", "2"], // string concatenation
+      [1, "2"] // string concatenation
+    ],
+    "multiplication": [
+      [1, 2], // normal
+      ["1", "2"], // string concatenation
+      [1, "2"] // string concatenation
+    ],
+    "division": [
+      [1, 2], // normal
+      ["1", "2"], // string concatenation
+      [1, "2"] // string concatenation
+    ]
+  },
+  "stringOperators": {
+    "concatenation": [
+      ["A", 10]
+    ],
+    "charCode":    "precisionLoss": [0.1, 0.2, 0.30000000000000004],
+    "roundTrip": 0.30000000000000004
+  },
+  "nullAndUndefined": null,
+  "booleans": [
+    'true',
+    'false'
+  ] as const
+}

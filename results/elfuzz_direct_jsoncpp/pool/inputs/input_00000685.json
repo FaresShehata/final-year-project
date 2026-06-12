@@ -1,0 +1,122 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": []
+                },
+                {
+                  "id": 4,
+                  "children": [
+                    {
+                      "id": 5,
+                      "children": []
+                    },
+                    {
+                      "id": 6,
+                      "children": [
+                        {
+                          "id": 7,
+                          "children": [
+                            {
+                              "id": 8,
+                              "children": {}
+                            },
+                            {
+                              "id": 9,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "data": {
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "uint64Max": 18446744073709551615,
+    "floatEpsilon": 1.19209290E-7
+  },
+  "version": 3,
+  "apps": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "securityContext": {},
+    "templateSpec": {
+      "serviceAccountName": "",
+      "volumes": [],
+      "securityContext": {
+        "allowPrivilegeEscalation": false,
+        "capabilities": {
+          "privileged": false,
+          "readOnlyRootFilesystem": false,
+          "procMountType": null,
+          "windowsOptions": null,
+          "seLinuxOptions": null,
+          "sysctls": null,
+          "auditAnnotations": null
+        },
+        "tolerations": [], "affinity": {}, 
+        "nodeSelector": {"kubernetes.io/os": "linux"}
+      },
+      "containers": [
+        {
+          "name": "app-container",
+          "image": "registry.example.com/my-image:v1.0.0",
+          "env": [{"name":"var_name","value":"var_value"},{"name":"VAR_NAME_1","valueFrom":{"secretKeyRef":{"key":"some-key","name":"secret-svr"}}}],
+          "ports":   ,
+          "resources": {
+            "limits": { "memory": "2Gi", "cpu": "1" },
+            "requests": { "memory": "1Gi", "cpu": "0.5" }
+          },
+          "volumeMounts": [{
+            "mountPath": "/var/log/app",
+            "subPath": "logs",
+            "readOnly": false
+          }],
+          "livenessProbe": {
+            "tcpSocket": { "port": 8080 }, 
+            "timeoutSeconds": 5,
+            "failureThreshold": 3,
+            "successThreshold": 1
+          },
+          "readinessProbe": {
+            "httpGet": { "path": "/readyz", "port":    }, 
+            "initialDelaySeconds": 5, "periodSeconds": 10, 
+            "timeoutSeconds": 5, "failureThreshold": 3, 
+            "successThreshold": 1
+          }
+        }
+      ]
+    }
+  },
+}

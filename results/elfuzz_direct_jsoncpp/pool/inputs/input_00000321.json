@@ -1,0 +1,202 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      {
+        "protocol": "http",
+        "name": "web-api",
+        "selector": "app=web-api",
+        "path": "/v1/web/api/",
+        "servicePort": 8080
+      }
+    ],
+    "healthCheck": {
+      "timeoutSeconds": 5,
+      "intervalSeconds": 10,
+      "initialDelaySeconds": 120,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "priorityClassName": "deployment-priority-class",
+    "nodeAffinity": {},
+    "tolerations": [],
+    "affinity": {},
+    "podAntiAffinity": {}
+  },
+  "status": {
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "updatedAt": "2024-11-03T15:01:10.234Z"
+  },
+  "spec": {
+    "runtime": {
+      "type": "docker",
+      "image": "example/image"//,
+      // "args": ["/bin/bash"]
+    },
+    "container": {
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "protocol": "TCP",
+          "targetPort": 80
+        }/*,
+        {
+          "hostPort": 8080,
+          "protocol": "TCP",
+          "targetPort": 8080
+        }*/
+      ]
+    },
+    "networks": [
+      {
+        "mode": "overlay",
+        "options": {
+          "com.docker.network.driver.overlay.vxlanid_list": "4097"
+        },
+        "subnet": ""
+      }
+    ],
+    "volumeMounts": [
+      {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "readOnly": true,
+        "subPath": "",
+        "name": "default-token-hzslj"
+      }
+    ],
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/health/liveness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/health/readiness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "env": [],
+    "resources": {
+      "requests": {
+        "cpu": "2000m",
+        "memory": "4Gi"
+      },
+      "limits": {
+        "cpu": "500m",
+        "memory": "1Gi"
+      }
+    },
+    "securityContext": {
+      "capabilities": {
+        "add": [],
+        "drop": []
+      },
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      },
+      "runAsUser": -1,
+      "fsGroup": -1,
+      "fsGroupChangePolicy": "Always",
+      "allowPrivilegeEscalation": false,
+      "privileged": false,
+      "readOnlyRootFilesystem": false,
+      "procMount": "Default",  "integers": {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "twentyOne": 21,
+    "twentyTwo": 22,
+    "twentyThree": 23,
+    "twentyFour": 24,
+    "twentyFive": 25,
+    "twentySix": 26,
+    "twentySeven": 27,
+    "twentyEight": 28,
+    "twentyNine": 29,
+    "thirty": 30,
+    "thirtyOne": 31,
+    "thirtyTwo": 32,
+    "thirtyThree": 33,
+    "thirtyFour": 34,
+    "thirtyFive": 35,
+    "thirtySix": 36,
+    "thirtySeven": 37,
+    "thirtyEight": 38,
+    "thirtyNine": 39,
+    "forty": 40,
+    "fortyOne": 41,
+    "fortyTwo": 42,
+    "fortyThree": 43,
+    "fortyFour": 44,
+    "fortyFive": 45,
+    "fortySix": 46,
+    "fortySeven": 47,
+    "fortyEight": 48,
+    "fortyNine": 49,
+    "fifty": 50,
+    "fiftyOne": 51,
+    "fiftyTwo": 52,
+    "fiftyThree": 53,
+    "fiftyFour": 54,
+    "fiftyFive": 55,
+    "fiftySix": 56,
+       "tab": "x\ty",
+    "control": "\u0001\u001f",
+    "delete": "\u007f",
+    "latin": "caf\u00e9 na\u00efve r\u00e9sum\u00e9",
+    "greek": "\u03b1\u03b2\u03b3\u03b4\u03b5",
+    "cyrillic": "\u041f\u0440\u0438\u0432\u0435\u0442",
+    "hebrew": "\u05e9\u05dc\u05d5\u05dd",
+    "arabic": "\u0645\u0631\u062d\u0628\u0627",
+    "cjk": "\u4f60\u597d\u4e16\u754c",
+    "surrogatePair": "\ud83d\ude00\ud83d\ude80\ud83c\udf89",
+    "mixedSurrogate": "a\ud83d\ude00b\ud83c\udf08c"
+  },
+  "rawUnicode": {
+    "emoji": "😀🚀🎉🔥💯",

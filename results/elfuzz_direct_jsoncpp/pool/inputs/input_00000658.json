@@ -1,0 +1,27 @@
+{
+  "title": "structural-stress",
+  "description": "<p>Structural stress is a concept in computer science and software engineering that refers to the quality of code by which it can be broken into smaller pieces.</p><pre class=\"code\"><span style=\"color: #657b83;\">class</span> <span style=\"color: #49a; font-weight: bold;\">Structurallist</span>(<span style=\"color: #49a; font-weight: bold;\">Iterable</span>&lt;<span style=\"color: #49a; font-weight: bold;\">int</span>&gt;, <span style=\"color: #49a; font-weight: bold;\">String</span> name) <br /> <span style=\"color: #657b83;\">def</span> <span style=\"color: #49a; font-weight: bold;\">__init__(self):</span></pre>",
+  "demoUrl": "",
+  "tags": ["design-patterns"],
+  "language": "python",
+  "difficulty": 1,
+  "time": 30,
+
+  "problem": {
+    "example": "The structural-list in this example should return a list containing all values referenced from the structure."
+  },
+  "questions": [
+
+  	{"question": "What is the result of running this function?", 
+  		"answer": "This will create a structural-list with three childs, each having two childs. The resulting array would look like: [[[[[["item"]]]]], [[[[]]]], [["item"]]]."},
+
+  	{ "question": "How many items are there in the result?",
+  		"answer": "There are four unique elements in the result, as two duplicate entries were removed."},
+  	{ "question": "Which element is at index 2?",
+  		"answer": "The second item is an empty structurallist."},
+
+  "data": [
+      [ {'type': 'int'}, ['item'] ],
+      [ [{'value':[{'value':'text'}]}] ]
+  ],
+}

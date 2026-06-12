@@ -1,0 +1,152 @@
+"""
+Seed 04 — Low-level Python: bytecode introspection, dis, code objects, ctypes,
+          struct, array, memoryview, pickle, copyreg, marshal, importlib,
+          sys internals, frame inspection, gc, tracemalloc, weakref, __slots__
+"""
+
+from __future__ import annotations
+
+import array
+import ctypes
+import dis
+import gc
+import importlib
+import importlib.abc
+import importlib.machinery
+import importlib.util
+import inspect
+import io
+import marshal
+import pickle
+import pickletools
+import struct
+import sys
+import textwrap
+import tracemalloc
+import types
+import weakref
+from typing import Any
+
+# ── Bytecode introspection ────────────────────────────────────────────────────
+
+def annotated_disassembly(fn) -> str:
+    buf = io.StringIO()
+    dis.dis(fn, file=buf)
+    return buf.getvalue()
+
+# ── dis - decodes bytecodes from a .pyc or .pyo file ──────────────────────────
+
+PYTHON_BYTECODES = {
+    'dis': dis.dis,
+    'load_const': load_const,
+    'load_name': load_name,
+    'build_class': build_class,
+}
+
+for name, fn in PYTHON_BYTECODES.items():
+    print(f"Disassembling {name}:")
+    print(annotated_disassembly(fn))
+    print()
+
+
+# ── Code Objects ──────────────────────────────────────────────────────────────
+
+SOURCE_CODE = textwrap.dedent("""
+    def foo(x):
+        x += 1
+    del x
+    """).strip()
+print("\nCode object:")
+CO = compile(SOURCE_CODE, filename="<demo>", mode="exec")
+
+print(CO.co_filename)
+print(CO.co_firstlineno)
+print(CO.co_consts)
+print(CO.co_names)
+print(CO.co_varnames)
+
+if CO.co_argcount == 0:
+    print("No positional arguments.")
+elif CO.co_argcount == 1:
+    print("One positional argument:", CO.co_varnames[0])
+else:
+    print("Multiple positional arguments:")
+
+args_spec = CO.co_argflags
+for arg_idx in range(CO.co_argcount):
+    if args_spec[arg_idx]:
+        print("\t", CO.co_varnames[arg_idx])
+
+
+# ── ctypes - allows you to create and manipulate C data structures ────────────
+
+class IntArrayType(ctypes.Structure):
+    _fields_ = [("value", ctypes.c_int)]
+
+
+class IntArrayObject(ctypes.Structure):
+    _fields_ = [
+        ("ob_refcnt", ctypes.c_ssize_t),
+        ("ob_type", ctypes.POINTER(IntArrayType)),
+        ("items", ctypes.POINTER(IntArrayType)),
+    ]
+
+
+iarray = IntArrayObject()
+ctypes.memset(iarray, 0x5a, ctypes.sizeof(IntArrayObject))
+
+assert iarray.ob_type.contents.value == 0x5a
+print(hex(iarray.__int__()))
+
+# ── Struct - works with ctypes but is easier to use ───────────────────────────-
+
+print("\nStruct:")
+struct_format = "ii"
+struct_obj = struct.Struct(struct_format).unpack_from(
+    bytearray(b"\x00\x00\x12\x34"), offset=0
+)
+print(struct_obj)
+
+
+# ── Array - creates a new buffer containing an array of objects ───────────────
+
+ARRAY_FORMAT = "iii"
+arr = array.array(ARRAY_FORMAT, [1, 2, 3])
+memview = memoryview(arr)
+print(memview.tobytes())
+
+# ── MemoryView - wraps the contents of any object that supports buffer protocol ──
+
+# This example uses a record type, defined in a separate module.
+# See https://github.com/python/cpython/blob/main/Objects/typeobject.h
+import demo.types as DTYPES
+
+record = DTYPES.Record(a=1, b=[2, 3])
+memview = memoryview(record)
+print(memview.format)
+print(memview.itemsize)
+print(memview.readonly)
+print(memview.shape)
+print(memview.ndim)
+print(memview.strides)
+print(memview.suboffsets)
+print(type(memview.obj))
+print(repr(memview[slice(None, None, -1)].obj))
+
+
+# ── Pickle - serializes/deserializes a python object to/from a bytes object ───
+
+try:
+    pickled = pickle.dumps([b"ciao", 1, {"foo": None}])
+except Exception as err:
+    print(err)
+else:
+    unpickled = pickle.loads(pickled)
+    assert isinstance(unpickled, list)
+    assert len(unpickled) == 3
+    assert not (unpickled[2] is None)
+    # Check for trivial optimization when pickling empty lists
+    assert pickle.dumps([]) != pickle.dumps(())
+
+
+# ──

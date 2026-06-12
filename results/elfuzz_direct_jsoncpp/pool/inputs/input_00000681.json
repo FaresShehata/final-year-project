@@ -1,0 +1,180 @@
+{
+  "name": "jsprism-test",
+
+  "variables": [
+
+    // simple
+    { "value": 42.0 },
+    { "value": true },
+    { "value": null },
+    { "value": [42] },
+    { "value": "[\"foo\"]" },
+    { "value": "{ \"key\": 42 }" },
+    { "value": "(function() { return 42; })()" },
+    { "value": "new Date(1)" },
+
+    // nested arrays and objects
+    {"nestedArray": [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [ [                          ]"},
+    {"nestedObject": {
+      "property1": "someValue",
+      "childObj": {
+        "arrayProperty": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "objProperty": {
+          "a": "b",
+          "c": "d"
+        }
+      }
+    }},
+    {"nestedNestedObject": {
+      "property1": "someValue",
+      "childObj": {
+        "arrayProperty": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "objProperty": {
+          "a": "b",
+          "c": "d"
+        }
+      }
+    }}
+  ],
+
+  "functions": {
+
+    // normal functions
+    {
+      "type": "function",
+      "args": [
+        {"name": "arg1", "value": 1},
+        {"name": "arg2", "value": 2}
+      ],
+      "body": [
+        {"expression": "arg1 + arg2"}
+      ]
+    },
+    {
+      "type": "function",
+      "args": [{"name": "arg1"}, {"name": "arg2"}],
+      "body": [
+        {"expression": "arg1 == arg2 ? 1 : 0"}
+      ]
+    },
+
+    // anonymous functions
+    {
+      "type": "anonymousFunction",
+      "body": [
+        {"expression": "arg1 * arg2"}
+      ]
+    },
+    {
+      "type": "anonymousFunction",
+      "body": [
+        {"expression": "arg1 > arg2 ? 1 : 0"}
+      ]
+    }
+
+  },
+
+  "objects": {
+    "simpleObjects": [
+      {
+        "property1": "someValue",
+        "property2": 42
+      },
+      {
+        "property1": "someOtherValue",
+        "property2": 42
+      }
+    ],
+    "objectWithFunctions": {
+      "funct1": function(arg) { return arg * 2; },
+      "funct2": function(arg) { return arg.length; }
+    },
+    "complexObject": {
+      "property1": "someValue",
+      "property2": "someOtherValue",
+      "property3": {
+        "prop1": "prop1Value",
+        "prop2": "prop2Value                          "id": 7,
+                          "children": []
+                        },
+                        {
+                          "id": 8,
+                          "children": [
+                            {
+                              "id": 9,
+                              "children": []
+                            },
+                            {
+                              "id": 10,
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "arrays": {
+    "empty": [],
+    "length_1": [true],
+    "length_2": ["foo"],
+    "length_3": [[false]],
+    "nestedArrays": [[[["ignored"]]]]
+  },
+  "strings": {
+    "singleByte": "\u001A",
+    "multiByte": "💖",
+    "unicodeCodepoint": "😂"
+  },
+  "booleanTypes": {
+    "boolTrue": true,
+    "boolFalse": false
+  },
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "exponentGreaterThanLimit": 1e309,
+    "exponentLessThanLimit": 1e-309,
+    "exponentNearLimit": 1e-308,
+    "smallExpPositive": 1e-1000,
+    "smallExpNegative": 1e1000,
+    "expSignedPlus": 6.022e23,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "higherSubNormal": 5e-323,
+    "higherSubNormalish": 5e-324
+  },
+  "mixedSignArray": [-5, 4, -3, 2, -1, 0, 1, -2, 3, -4, 5],
+  "scientificGrid": [
+    { "value": "1.23e+1", "x": 1, "y": 2, "z": 3 },
+    { "value": "1.23e-1", "x": 1, "y": 2, "z": 3 },
+    { "value": "-1.23E+1", "x": -1, "y": -2, "z": -3 },
+    { "value": "-1.23e-1", "x": -1, "y": -2, "z": -3 }
+  }

@@ -1,0 +1,51 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "parent": -1,
+      "siblings": { "left": null, "right": null },
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": [
+                    { "id": 4, "children": [], "leaf": true }
+                  ],
+                  "meta": { "depth": 4, "path": [0, 1, 2, 3] }
+                }
+              ],
+              "siblings": { "left": null, "right": { "ref": "#/root/node/children/0/children/0/children/1" } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "unicode": {
+    "control": "\u0001\u001f",
+    "latin": "caf\u00e9 na\u00efve r\u00e9sum\u00e9",
+    "greek": "\u03b1\u03b2\u03b3\u03b4\u03b5",
+    "cyrillic": "\u041f\u0440\u0438\u0432\u0435\u0442",
+    "hebrew": "\u05e9\u05dc\u05d5\u05dd",
+    "arabic": "\u0645\u0631\u062d\u0628\u0627",
+    "cjk": "\u4f60\u597d\u4e16\u754c",
+    "surrogatePair": "\ud83d\ude00\ud83d\ude80\ud83c\udf89",
+    "rawUnicode": {
+    "emoji": "😀🚀🎉🔥💯",
+    "accents": "café résumé naïve Zürich",
+    "narrowHalfWidth": "a\uFFFDb\uFFFDc\uFFFD",
+    "wideFullWidth": "a\u{FFFD}b\u{FFFD}c\u{FFFD}"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "kind": "DeploymentSpec",
+  "metadata": {
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ]
+  },
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "message": "The deployment is ready.",
+        "status": "True",
+        "reason": "",
+        "lastTransitionTime": "2024-11-03T14:22:01.123Z"
+      }
+    ],
+    "deployment": {
+      "creationTimestamp": "2024-11-03T14:22:01.123Z",
+      "generation": 1,
+      "readyReplicas": 3,
+      "observedGeneration": 1,
+      "updatedReplicas": 3,
+      "availableReplicas": 3,
+      "replicas": 3,
+      "selector": null
+    }
+  },
+  "users": [
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": [],
+      "score": 0,
+      "lastLogin": null,
+      "preferences": {},
+      "history": []
+    }
+  ],
+  "metrics": {
+    "counters": {},
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "namespace": "default"
+  },
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "halfInt32Min": -214748364.75,
+    "halfInt32Max": 214748364.75,
+    "floatNaN": NaN,
+    "floatInfinity": Infinity,
+    "floatNegInfinity": -Infinity
+  },
+  "numbers": {
+    "pi": 3.141592653589793,
+    "tau": 6.283185307179586,
+    "euler": 2.718281828459045,
+    "goldenRatio": (1 + Math.sqrt(5)) / 2,
+    "goldbach": 17,
+    "sqrtTwo": Math.SQRT2,
+    "infPos": +Infinity,
+    "infNeg": -Infinity,
+    "nanPos": +NaN,
+    "nanNeg": -NaN,
+    "nearlyEqual": 0.1,
+    "almostEqual": 1e-15
+  }
+}

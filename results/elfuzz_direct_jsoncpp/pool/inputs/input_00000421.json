@@ -1,0 +1,175 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "beyondSafe": 9007199254740993,
+    "int32Max": 2147483647,
+    "int32Min": -2147483648,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -123456789012345678901234567890
+  },
+  "stringAndUnicode": {
+    // See https://unicode-table.com/en/#combining-character-sequence
+    "combiningSequence": "☃",
+    "combiningCharacterSequence": "☃",
+    "nonBreakingSpace": " ",
+    "lineSeparator": "​",
+    "paragraphSeparator": "​"
+  },
+  "array": [
+    "",
+    "a",
+    "ab",
+    "abc",
+    "\n",
+    "\u0000",
+    "😀",
+    "café"
+  ],
+  "keysWithSpecialChars": {
+    "specialKey": "\t", // Tab character
+    "newline": "\n", // Newline character
+    "space": " ", // Space character
+    "backslash": "\\", // Backslash character
+    "numberSign": "#", // Number sign character
+    "hash": "#", // Hash symbol character
+    "colon": ":", // Colon character
+    "semicolon": ";", // Semicolon character
+    "equal": "=", // Equal sign character
+    "ampersand": "&", // Ampersand character
+    "asterisk": "*", // Asterisk character
+    "openParenthesis": "(", // Open parenthesis character
+    "closeParenthesis": ")", // Close parenthesis character
+    "openSquareBracket": "[", // Open square bracket character
+    "closeSquareBracket": "]", // Close square bracket character
+    "openCurlyBrace": "{", // Open curly brace character
+    "closeCurlyBrace": "}", // Close curly brace character
+    "lessThan": "<", // Less-than sign character
+    "greaterThan": ">", // Greater-than sign character
+    "questionMark": "?", // Question mark character
+    "exclamationPoint": "!", // Exclamation point character
+    "fullStop": ".", // Full stop character
+    "comma": ",", // Comma character
+    "period": ".", // Period character
+    "dot": ".", // Dot character
+    "tilde": "~", // Tilde character
+    "caret": "^", // Caret character
+    "underscore": "_", // Underscore character
+    "dash": "-", // Dash character
+    "hyphen": "-", //
+module.exports = {
+  data: {
+    stringAndUnicode,
+    array,
+    keysWithSpecialChars,
+    arrayOfStrings,
+    emptyFile,
+    oneLineString,
+    multiLineString,
+    multilineMultilineString,
+    twoLineMultilineString,
+    threeLineMultilineString,
+    fourLineMultilineString,
+    fiveLineMultilineString,
+    sixLineMultilineString,
+    sevenLineMultilineString,
+    eightLineMultilineString,
+    nineLineMultilineString,
+    tenLineMultilineString,
+    elevenLineMultilineString,
+    twelveLineMultilineString,
+    thirteenLineMultilineString,
+    fourteenLineMultilineString,
+    fifteenLineMultilineString,
+    sixteenLineMultilineString,
+    seventeenLineMultilineString,
+    eighteenLineMultilineString,
+    nineteenLineMultilineString,
+    twentyLineMultilineString,
+    oneLineObject,
+    twoLineObject,
+    threeLineObject,
+    fourLineObject,
+    fiveLineObject,
+    sixLineObject,
+    sevenLineObject,
+    eightLineObject,
+    nineLineObject,
+    tenLineObject,
+    elevenLineObject,
+    twelveLineObject,
+    thirteenLineObject,
+    fourteenLineObject,
+    fifteenLineObject,
+    sixteenLineObject,
+    seventeenLineObject,
+    eighteenLineObject,
+    nineteenLineObject,
+    twentyLineObject,
+    oneLineMultiArray,
+    twoLineMultiArray,
+    threeLineMultiArray,
+    fourLineMultiArray,
+    fiveLineMultiArray,
+    sixLineMultiArray,
+    sevenLineMultiArray,
+    eightLineMultiArray,
+    nineLineMultiArray,
+    tenLineMultiArray,
+    elevenLineMultiArray,
+    twelveLineMultiArray,
+    thirteenLineMultiArray,
+    fourteenLineMultiArray,
+    fifteenLineMultiArray,
+    sixteenLineMultiArray,
+    oneLineNumber,
+    twoLineNumber,
+    threeLineNumber,
+    fourLineNumber,
+    fiveLineNumber,
+    sixLineNumber,
+    sevenLineNumber,
+    eightLineNumber,
+    nineLineNumber,
+    tenLineNumber,
+    elevenLineNumber,
+    twelveLineNumber,
+    thirteenLineNumber,
+    fourteenLineNumber,
+    fifteenLineNumber,
+    sixteenLineNumber,
+    seventeenLineNumber,
+    eighteenLineNumber,
+    nineteenLineNumber,
+    twentyLineNumber,
+    oneLineBoolean,
+    twoLineBoolean,
+    threeLineBoolean,
+    fourLineBoolean,
+    fiveLineBoolean,
+    sixLineBoolean,
+    sevenLineBoolean,
+    eightLineBoolean,
+    nineLineBoolean,
+    tenLineBoolean,
+    elevenLineBoolean,
+    twelveLineBoolean,
+    thirteenLineBoolean,
+   	});
+
+	it("should return false if the array is not equal", () => {
+		assert.equal(eqArrays([1, 2, 3], [1, 2, 3, 4]), false);
+	});
+
+	it("should return true for an empty array of length zero", () => {
+		assert.equal(eqArrays([], []), true);
+	});
+});

@@ -1,0 +1,117 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" },
+      { "name": "FEATURE_FLAGS", "valueFrom": { "configMapKeyRef": { "name": "flags", "key": "json" } } },
+      { "name": "ENVIRONMENT", "value": "" },
+      { "name": "REMOTE_DIR", "value": "/tmp/tmpremote" },
+      { "name": "NODE_ENV", "valueFrom": { "secretKeyRef": { "name": "node-env-vars", "key": "NODE_ENV" } } },
+      { "name": "PORT", "valueFrom": { "fieldRef": { "fieldPath": "metadata.annotations['deployer.openshift.io/ingress.port']" } } },
+      { "name": "SSL_CERT_FILE", "valueFrom": { "secretKeyRef": { "name": "tls-certs", "key": "fullchain.pem" } } },
+      { "name": "SSL_KEY_FILE", "valueFrom": { "secretKeyRef": { "name": "tls-certs", "key": "privkey.pem" } } },
+      { "name": "SSL_CERT_PATH", "valueFrom": { "fieldRef": { "fieldPath": "metadata.annotations['deployer.openshift.io/tls.cert.path']" } } },
+      { "name": "SSL_KEY_PATH", "valueFrom": { "fieldRef": { "fieldPath": "metadata.annotations['deployer.openshift.io/tls.key.path']" } } },
+      { "name": "SSL_CRT_CHAIN_PATH", "valueFrom": { "fieldRef": { "fieldPath": "metadata.annotations['deployer.openshift.io/cert.chain.path']" } } },
+      { "name": "CA_BUNDLE", "valueFrom": { "fieldRef": { "fieldPath": "metadata.annotations['deployer.openshift.io/ca-bundle.path']" } } }
+    ],
+    "volumes": [
+      { "hostPath": { "path": "/tmp/tmpremote", "type": "DirectoryOrCreate" }, "mountPath": "/tmp/tmpremote", "subPath": "", "readOnly": false, "readWriteMode": "ReadWriteOnce" }
+    ]
+  },
+  "status": {
+    "conditions": [],
+    "state": ""
+  },
+  "alertmanagerConfig": {
+    "activeMq": {},
+    "teams": [
+      {
+        "name": "default",
+        "webhook_configs": [
+          {
+            "url": "https://slack.com/api/webhooks/<redacted>",
+            "sendDefaults": true,
+            "insecureSkipVerify": true,
+                 "name": "local-coords",
+      "origin": [-50000, -34000],
+      "xaxis": [0, 8600],
+      "yaxis": [17000, 0]
+    },
+    {
+      "type": "coordsys",
+      "name": "global-coords",
+      "origin": [0, 0],
+      "xaxis": [0, 9200],
+      "yaxis": [0, 17500]
+    }
+  ],
+  "variables": [
+    {
+      "type": "variable",
+      "id": "K",
+      "unit": "m^2",
+      "minValue": -1e-10,
+      "maxValue": 1e+10,
+      "value": 0,
+      "label": "Stiffness",
+      "legendSymbol": "F"
+    },
+    {
+      "type": "variable",
+      "id": "alpha",
+      "unit": "/s",
+      "minValue": -1e-10,
+      "maxValue": 1e+10,
+      "value": 0,
+      "label": "Alpha",
+      "legendSymbol": "F"
+    },
+    {
+      "type": "variable",
+      "id": "beta",
+      "unit": "/s^2",
+      "minValue": -1e-10,
+      "maxValue": 1e+10,
+      "value": 0,
+      "label": "Beta",
+      "legendSymbol": "F"
+    },
+    {
+      "type": "variable",
+      "id": "c1",
+      "unit": "kg/m",
+      "minValue": -1e-10,
+      "maxValue": 1e+10,
+      "value": 0,
+      "label": "C1",
+      "legendSymbol": "F"
+    },
+    {
+      "type": "variable",
+      "id": "c2",
+      "unit": "kg/m^2",
+      "minValue": -1e-

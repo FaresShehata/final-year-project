@@ -1,0 +1,248 @@
+{
+  "schema": "deeply-nested-recursive",
+  "version": 3,
+  "root": {
+    "node": {
+      "id": 0,
+      "parent": -1,
+      "siblings": { "left": null, "right": null },
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [
+                {
+                  "id": 3,
+                  "children": [
+                    {
+                      "id": 4,
+                      "children": [
+                        {
+                          "id": 5,
+                          "children": [
+                            {
+                              "id": 6,
+                              "children": [
+                                {
+                                  "id": 7,
+                                  "children": [
+                                    {
+                                      "id": 8,
+                                      "children": [
+                                        {
+                                          "id": 9,
+                                          "children": [
+                                            {
+                                              "id": 10,
+                                              "children": [
+                                                {
+                                                  "id": 11,
+                                                  "children": [
+                                                    {
+                                                      "id": 12,
+                                                      "children": [
+                                                        {
+                                                          "id": 13,
+                                                          "children": [
+                                                            {
+                                                              "id": 14,
+                                                              "children": [
+                                                                {
+                                                                  "id": 15,
+                                                                  "children": [
+                                                                    {
+                                                                      "id": 16,
+                                                                      "children": [
+                                                                        {
+                                                                          "id": 17,
+                                                                          "children": [
+                                                                            {
+                                                                              "id": 18,
+                                                                              "children": [
+                                                                                {
+                                                                                  "id": 19,
+                                                                                  "children": [
+                                                                                    {
+                                                                                      "id": 20,
+                                                                                      "children": [
+                                                                                        {
+                                                                                          "id": 21,
+                                                                                          "children": [
+                                                                                            {
+                                                                                              "id": 22,
+                                                                                              "children": [
+                                                                                                {
+                                                                                                  "id": 23,
+                                                                                                  "children": [
+                                                                                                    {
+                                                                                                      "id": 24,
+                                                                                                      "children": [
+                                                                                                        {
+                                                                                                          "id": 25,
+                                                                                                          "children": [
+                                                                                                            {
+                                                                                                              "id": 26,
+                                                                                                              "children": [
+                                                                                                                {
+                                                                                                                  "id": 27,
+                                                                                                                  "children": [
+                                                                                                                    {
+                                                                                                                      "id": 28,
+                                                                                                                      "children": [
+                                                                                                                        {
+                                                                                                                          "id": 29,
+                                                                                                                          "children": [
+                                                                                                                            {
+                                                                                                                              "id": 30,
+                                                                                                                              "children": [
+                                                                                                                                {
+                                                                                                                                  "id": 31,
+                                                                                                                                  "children": [
+                                                                                                                                    {
+                                                                                                                                      "id": 32,
+                                                                                                                                      "children": [
+                                                                                                                                        {
+                                                                                                                                          "id": 33,
+                                                                                                                                          "children": [
+                                                                                                                                            {
+                                                                                                                                              "id": 34,
+                                                                                                                                              "children": [
+                                                                                                                                                {
+                                                                                                                                                  "id": 35    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      {
+        "protocol": "http",
+        "name": "web-api",
+        "selector": "app=web-api",
+        "path": "/v1/web/api/",
+        "servicePort": 8080
+      }
+    ],
+    "healthCheck": {
+      "timeoutSeconds": 5,
+      "intervalSeconds": 10,
+      "initialDelaySeconds": 120,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "priorityClassName": "deployment-priority-class",
+    "nodeAffinity": {},
+    "tolerations": [],
+    "affinity": {},
+    "podAntiAffinity": {}
+  },
+  "status": {
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "updatedAt": "2024-11-03T15:01:10.234Z"
+  },
+  "spec": {
+    "runtime": {
+      "type": "docker",
+      "image": "example/image"//,
+      // "args": ["/bin/bash"]
+    },
+    "container": {
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "protocol": "TCP",
+          "targetPort": 80
+        }/*,
+        {
+          "hostPort": 8080,
+          "protocol": "TCP",
+          "targetPort": 8080
+        }*/
+      ]
+    },
+    "networks": [
+      {
+        "mode": "overlay",
+        "options": {
+          "com.docker.network.driver.overlay.vxlanid_list": "4097"
+        },
+        "subnet": ""
+      }
+    ],
+    "volumeMounts": [
+      {
+        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+        "readOnly": true,
+        "subPath": "",
+        "name": "default-token-hzslj"
+      }
+    ],
+    "livenessProbe": {
+      "httpGet": {
+        "path": "/health/liveness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "readinessProbe": {
+      "httpGet": {
+        "path": "/health/readiness",
+        "port": 8080,
+        "scheme": "HTTP"
+      },
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "successThreshold": 1,
+      "failureThreshold": 3
+    },
+    "env": [],
+    "resources": {
+      "requests": {
+        "cpu": "2000m",
+        "memory": "4Gi"
+      },
+      "limits": {
+        "cpu": "500m",
+        "memory": "1Gi"
+      }
+    },
+    "securityContext": {
+      "capabilities": {
+        "add": [],
+        "drop": []
+      },
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      },
+      "runAsUser": -1,
+      "fsGroup": -1,
+      "fsGroupChangePolicy": "Always",
+      "allowPrivilegeEscalation": false,
+      "privileged": false,
+      "readOnlyRootFilesystem": false,
+      "procMount": "Default",
+      "windowsOptions": {
+        "gid": -1,
+        "startupInfo": {}
+      }
+    },
+    "ttlSeconds": 0,
+    "sidecars": [],
+    "initContainers": [],
+    "pods": [],
+    "containers": [
+     

@@ -1,0 +1,131 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "maxReplicas": 5,
+    "minReplicas": 1,
+    "labels": { "environment": "prod" },
+    "status": {
+      "currentAvailable": 3,
+      "available": 3,
+      "ready": 3,
+      "observedGeneration": 17,
+      "updatedReplicas": 3,
+      "desiredReplicas": 3,
+      "synced": true
+    },
+    "condition": {
+      "type": "Ready",
+      "message": "",
+      "sinceTime": "2024-11-03T14:22:01.123Z"
+    },
+    "template": {
+      "apiVersion": "v1",
+      "kind": "PodTemplate",
+      "metadata": {
+        "name": "testpod",
+        "creationTimestamp": "2024-11-03T14:22:01.123Z",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/podtemplates/testpod",
+        "uid": "df25b1cd-2a03-40dc-a24f-b0cb0e5efc62",
+        "resourceVersion": "5276497",
+        "generation": 1,
+        "labels": {
+          "app.kubernetes.io/name": "stress-test-pod-template",
+          "pod.template.kubernetes.io/created-by": "{\"kind\":\"Deployment\",\"apiVersion\":\"apps/v1\",\"metadata\":{\"name\":\"stress-test-deployment\",\"namespace\":\"default\"},\"spec\":{\"selector\":{\"matchLabels\":{\"app.kubernetes.io/name\":\"stress-test-pod-template\"}},\"template\":{\"metadata\":{\"labels\":{\"app.kubernetes.io/name\":\"stress-test-pod-template\"}},\"spec\":{\"containers\":[{\"image\":\"kennethreitz/httpbin\",\"name\":\"httpbin-container\"}]}}}},{\"name\":\"stress-test-deployment\",\"namespace\":\"default\"}",
+          "managedBy": "deployment.apps/stress-test-deployment"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "blockOwnerDeletion": false,
+            "controller": true,
+            "kind": "Deployment",
+            "name": "stress-test-deployment",
+            "uid": "cc67113b-fede-46aa-aa8c-6f1225b16611"
+          }
+        ]
+      },
+      "spec": {
+        "serviceAccountName": "default",
+        "tolerations": [],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirstWithHostNet",
+        "securityContext": {},
+        "schedulerName": "default-scheduler",
+        "runtimeClassName": null,
+        "priorityClassName": "",
+        "nodeName": "worker1",
+        "nodeSelector": {}
+      }
+    },
+    "services": [{
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "svc-stress-test-service",
+        "creationTimestamp": "2024-11-03T14:22:01.123Z",
+        "namespace": "default",
+        "selfLink": "/apis/networking.k8s.io/v1/services/svc-stress-test-service",
+        "uid": "77db3eb2-fb49-4275-9343-adb3ee89b0ee",
+        "resourceVersion": "5276496",
+        "generation": 1,
+        "labels": {
+          "app.kubernetes.io/name": "stress-test-service",
+          "managedBy": "deployment.apps/stress-test-deployment"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "apps/v1",
+            "blockOwnerDeletion": false,
+            "controller": true,
+            "kind": "Deployment",
+            "name": "stress-test-deployment",
+            "uid": "cc67113b-fede-46aa-aa8c-6f1225b16611"
+          }
+        ]
+      },
+      "spec": {
+        "ports": [{ "port": 80 }],
+        "clusterIP": "None",
+        "externalTrafficPolicy": "Local",
+        "sessionAffinity": "None",
+        "type": "LoadBalancer",
+        "publishNotReadyAddresses": false,
+        "selector": {
+          "app.kubernetes.io/name": "stress-test-pod-template"
+        },
+        "loadBalancers": []
+      }
+    }]
+  },
+  "values": {
+    "strings": {
+      "hello": "world",
+      "zero": 0,
+    "negZero": -0,
+    "one": 1,
+    "negOne": -1,
+    "maxSafe": 9007199254740991,
+    "minSafe": -9007199254740991,
+    "infinity": 9.999e+308,
+    "-infinity": -9.999e+308,
+    "nan": NaN
+  },
+  "floats": {
+    // The spec says that IEEE floating point numbers should be treated as
+    // integers for the purposes of the toFixed method.
+    "infiniteDecimalPlaces": Number.MAX_VALUE.toFixed(Infinity),
+    "negativeInfidecplaces": Number.NEGATIVE_INFINITY.toFixed(-Infinity)
+  }
+}

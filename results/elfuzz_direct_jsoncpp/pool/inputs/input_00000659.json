@@ -1,0 +1,157 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 },
+    { "value": "42" },
+    { "value": 42.0 },
+    { "value": true },
+    { "value": null },
+    { "value": [42] },
+    { "value": { "n": 42 } }
+  ],
+
+  "longHomogeneousArray": [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+    31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+    51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+    61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+    71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90,
+    91, 92, 93, 94, 95, 96, 97, 98, 99, 100<|file_sep|>/src/structures.js
+import { isObject, isBoolean, isArray, isNull, isNumber, isString, isDateType } from '../utils';
+import { getName, getDescr, getTagNames, getTypeName, mergeMap } from './structureUtils';
+
+const MAX_UINT_32_SIZE = 0xffffffff;
+
+/**
+ * Gets the name of a structure.
+ * If the structure does not have one set it will just use the default name: 'Struct'
+ *
+ * @param {Structure} struc The structure to get the name for
+ * @returns {string} The name or 'Struct' if none exists
+ */
+export function getName(struc) {
+  return getName(struc);
+}
+
+/**
+ * Gets the description of a structure.
+ * If no description has been set it will return an empty string.
+ *
+ * @param {Structure} struc The structure to get the description for
+ * @returns {string} The description of the structure
+ */
+export function getDescription(struc) {
+  return getDescription(struc);
+}
+
+/**
+ * Gets all the tag names used in a structure recursively.
+ * This method also takes into account structures that are children of other structures
+ * and therefore can't be directly accessed by the user.
+ *
+ * @param {Structure} struc The structure to get the tags for
+ * @returns {Set<string>} A set containing all the tag names used in this structure
+ */
+export function getAllTags(struc) {
+  const result = new Set();
+  getTagNames(struc, result);
+  return result;
+}
+
+/**
+ * Checks whether two structures refer to the same object (i.e. they point to the exact same memory address).
+ * Note that this is different from checking equality via == because it's only possible to check whether
+ * two objects refer to the same instance when their types match exactly. For example, `new Date()` !== `new Date()`
+ *
+ * @param {Structure} structA One of the structures to compare
+ * @param {Structure} structB Another structure to compare
+ * @returns {boolean} Whether both structures refer to the same object
+ */
+export function isEqual(structA, structB) {
+  return structA === structB;
+}
+
+/**
+ * Returns a boolean indicating whether or not the type of a given structure matches the provided type.
+ *
+ * @param {Structure} struct The structure whose type needs to be checked against
+ * @param {string|number} typeOrSizeStr Type as a string or size as a number
+ * @returns {boolean} True if the type matches, false otherwise
+ */
+export function isOfType(struct, typeOrSizeStr) {
+  let type = typeOrSizeStr.toString();
+
+  if (!isString(type)) {
+    // Convert sizes to strings
+    type = '' + typeOrSizeStr;
+  }
+
+  if (isNull(type)) {
+    return struct.type === 'null';
+  } else if (isArray(type)) {
+    return struct.type === getTypeName('array') && struct.size === type.length;
+  } else if (isString(type)) {
+    switch (type) {
+      case 'bool':
+        return struct.type === getTypeName('bool');
+      case 'int8_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 1;
+      case 'uint8_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 1;
+      case 'uint16_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 2;
+      case 'int16_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 2;
+      case 'int32_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 4;
+      case 'float32_t':
+        return struct.type === getTypeName('float');
+      case 'uint32_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 4;
+      case 'double':
+        return struct.type === getTypeName('float') &&
+          struct.size === 8;
+      case 'int64_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 8;
+      case 'uint64_t':
+        return struct.type === getTypeName('integer') &&
+          struct.size === 8;
+      case 'char*':
+        return struct.type === getTypeName('pointer') &&
+          !struct.array;
+      case 'unsigned char*':
+        return struct.type === getTypeName('pointer') &&
+          struct.array;
+      default:
+        throw new Error(`Unknown type ${type}`);
+    }
+  } else {
+    throw new Error(`Invalid argument: ${type}`);
+  }
+<|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|><|fim_pad|>}
+
+/**
+ * Checks whether a structure represents a primitive value (e.g. null, undefined, NaN, numbers, strings, booleans)
+ *
+ * @param {Structure} struct The structure to

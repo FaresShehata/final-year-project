@@ -1,0 +1,66 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "typeCollisionNumber": [
+    1, 2, 3, 4,
+
+    { "value": 42.0 },
+    { "test": ["a"] },
+    { "test": [[[]]] },
+    { "test": { "x": "x" } }
+  ],
+
+  "whitespaceStress":{"a":1,"b":2,"c":[1,2,3],"d":{"e":4}},
+
+  "wideObject": {
+    "f0": 0, "f1": 1, "f2": 2, "f3": 3, "f4": 4,
+    "f5": 5, "f6": 6, "f7": 7, "f8": 8, "f9": 9,
+    "f10": 10, "f11": 11, "f12": 12, "f13": 13, "f14": 14,
+    "f15": 15, "f16": 16, "f17": 17, "f18": 18, "f19": 19
+  },
+
+  "widelyNestedObject":{
+    "nestedObject":{
+      "deeplyNestedObject":{
+        "deepestLevel": "I'm the deepest level ever!"
+       }
+     }
+   },
+
+  "doubleTest": {
+
+    "subObject": {
+      "subSubObject": {
+        "subSubSubObject": {}
+      }
+    }
+
+  },
+
+
+  // This is used to test that enums work properly in the validator.
+  "enums": {
+    "permissionLevels": ["read_only", "write_only"],
+    "weights": [0.1, 0.25, 0.65],
+    "deploymentEnvironment": "dev"
+  },
+  
+  "simpleJsons": [
+    {"test": [{"x":"y","z":"zz"},{"a":"b"}]},
+    {"test": [{"a":"b"},{"b":"c"}]}
+  ],
+  
+  "arrayWithArrays": [
+    {"test":[{"a":"c"},{"b":"c"}]}
+  ]
+}
+// vim: set ft=javascript ts=2 sw=2 et :

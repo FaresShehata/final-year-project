@@ -1,0 +1,171 @@
+{
+  "apiVersion": "2024.11",
+  "kind": "Configuration",
+  "metadata": {
+    "id": "cfg-9f8e7d6c",
+    "createdAt": "2024-11-03T14:22:01.123Z",
+    "tags": ["production", "us-east", "tier-1"],
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ],
+    "env": [
+      { "name": "LOG_LEVEL", "value": "debug" },
+      { "name": "MAX_CONNECTIONS", "value": "1024" },
+      { "name": "FEATURE_FLAGS", "valueFrom": { "configMapKeyRef": { "name": "flags", "key": "json" } } }
+    ]
+  },
+  "users": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Alice",
+      "active": true,
+      "roles": ["admin", "developer"],
+      "score": 98.6,
+      "lastLogin": "2024-11-02T09:15:00Z",
+      "preferences": { "theme": "dark", "notifications": { "email": true, "sms": false, "push": null } },
+      "history": [
+        { "action": "login", "ts": 1730538900 },
+        { "action": "deploy", "ts": 1730539200, "details": { "service": "api", "version": "v2.3.1" } }
+      ]
+    },
+    {
+      "uuid": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Bob",
+      "active": false,
+      "roles": ["user"],
+      "score": null,
+      "lastLogin": null,
+      "preferences": { "theme": null, "notifications": {} },
+      "history": []
+<|file_sep|><|fim_prefix|>/README.md
+# AWS Config Test
+
+This is a simple test to show how you can use the `aws` secret with a Helm chart.
+
+## How does it work?
+
+It's a very basic example that shows how you can get your AWS credentials from an SSM paramater and then use them in a Kubernetes secret. 
+
+The chart uses the [vault-secrets-provider](https://charts.bitnami.com/bitnami/vault-secrets) Bitnami chart as a way of getting the values into Vault.
+
+Then it uses the [helm-vault-plugin](https://github.com/helm-vault-plugin/) Helm plugin to fetch the vault values into a Kubernetes secret.
+
+And finally, we use the [bitnami/aws-config-secret](https://charts.bitnami.com/bitnami/aws-config-secret) Bitnami chart to get the AWS configuration from the secrets.
+
+## The Chart
+
+The chart has only one dependency which is the `vault-secrets` chart mentioned above.
+
+When the chart is installed, the following files are created:
+
+```
+├── charts/
+│   └── vault-secrets
+│       ├── README.md
+│       ├── charts/
+│       │   ├── bitnami-helm-chart-example/
+│       │   │   ...
+│       │   ├── vault/
+│       │   │   ...
+│       │   └── templates/
+│       │       ├── configmap.yaml
+│       │       ├── livenessprobe.yaml
+│       │       ├── readinessprobe.yaml
+│       │       └── serviceaccount.yaml
+│       ├── charts.yaml
+│       ├── images.yaml
+│       ├── params.yaml
+│       └── requirements.yaml
+└── Chart.yaml
+```
+
+### Changes made to the `Chart.yaml`
+
+We changed the version of the `chart` to be `1.0.0`. This will ensure that the chart is deployed when we run `helm install ...`.
+
+### Changes made to the `values.yaml`
+
+We set the following parameters:
+
+* `secretName`: this is the name of the secret that will be created by the chart.
+* `secrets`: this is the list of secrets that we want to create in Vault and their values.
+
+In our case, we have two secrets: `accessKeyID`, and `secretAccessKey`. We also specify the path where these keys should be stored in Vault. In this case, they are under the `AWS` namespace and the `config` key.
+
+### Chart Dependencies
+
+The chart depends on the `vault-secrets` chart which is uploaded to Bitnami Charts Repository using the following command:
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm dep update apps.vault-secrets
+```
+
+You can see more about how to upload charts to the repository here: https://docs.helm.sh/docs/topics/charts/#uploading-charts-to-the-repository
+
+## Usage
+
+To deploy the chart, make sure you have the [Helm CLI](https://helm.sh/docs/intro/install/) installed and run the following command:
+
+```bash
+helm upgrade --install aws-config-test ./charts/aws-config-test
+```
+
+This will install the chart and create the following resources:
+
+* Secret: `aws-config-test-access-key-id`
+* Secret: `aws-config-test-secret-access-key`
+* Secret: `aws-config-test-role-session-token`
+* Secret: `aws-config-test-profile    "tab": "\tx\ty"
+  },
+  "whitespaceCharacters": {
+    "\n": "new line",
+    "\t": "tab",
+    "\r": "carriage return",
+    "\f": "form feed",
+    "\v": "vertical tab",
+    "\u00A0": "non-breaking space",
+    "\xA0": "no-break-space",
+    "\u202F": "zero width no break space",
+    "\uFEFF": "byte order mark"
+  },
+  "hexadecimalEscape": "\\x0a\\x0d\\xfeff",
+  "octalEscape": "\\010\\042\\077\\037",
+  "charCodes": {
+    "a": 97,
+    "e": 101,
+    "o": 111,
+    "l": 108,
+    "colon": ":",
+    "hyphen": "-"
+  },
+  "charactersFromCodePoint": {
+    "codepoint": 65,
+    "character": "A"
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[[5, 6]]]
+  ],
+  "array": ["foo", "bar", "baz"],
+  "object": {
+    "abc": 123,
+    "def": undefined
+  },
+  "escapedObject": "{\"key\":\"value\"}"
+}

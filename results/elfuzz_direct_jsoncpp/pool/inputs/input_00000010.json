@@ -1,0 +1,70 @@
+{
+  "title": "numeric-edge-cases",
+  "integers": {
+    "description": "Integer values should be rounded to the nearest integer. Please note that this is not necessarily a whole number, as JavaScript can represent non-integer values.",
+    "test": [
+      {
+        "expression": 42,
+        "expectedOutput": 42
+      },
+      {
+        "expression": -100,
+        "expectedOutput": -100
+      },
+      {
+        "expression": 3.14,
+        "expectedOutput": 3 // Rounded down since it's closer than up
+      },
+      {
+        "expression": -3.897,
+        "expectedOutput": -4 // Rounded down since it's closer than up
+      }
+    ]
+  },
+  "floats": {
+    "description": "Float values should be rounded to the nearest whole number. This behavior varies based on the precision of the float value itself.",
+    "test": [
+      {
+        "expression": 4.5,
+        "expectedOutput": 5 // Rounds up because it's closer than down
+      },
+      {
+        "expression": 3.6,
+        "expectedOutput": 4 // Rounds up because it's closer than down
+      },
+      {
+        "expression": 4.56,
+        "expectedOutput": 5 // Rounds up because it's closer than down
+      },
+      {
+        "expression": 3.456,
+        "expectedOutput": 3 // Rounded down since it's closer than up
+      },
+      {
+        "expression": 4.567,
+        "expectedOutput": 5 // Rounded down since it's closer than up
+      }
+    ]
+  },
+  "decimals": {
+    "description": "Decimal values should be rounded to the specified number of decimal places.",
+    "test": [
+      {
+        "expression": 4.5,
+        "precision": 1,
+        "expectedOutput": 4.5
+      },
+      {
+        "expression": 4.56,
+        "precision": 2,
+        "expectedOutput": 4.56
+      },
+      {
+        "expression": 4.567,
+        "precision": 1,
+        "expectedOutput": 4.6
+      },
+      {
+        "expression": 4.567,
+        "precision": 3,
+        "expectedOutput": 4.567

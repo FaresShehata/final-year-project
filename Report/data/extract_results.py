@@ -118,14 +118,18 @@ def read_xlsx_sheet(path: str, sheet_name: str | None = None) -> list[list]:
 
 
 def extract_evolution(run: str, out_path: str) -> bool:
-    """Normalise either tool's coverage_by_generation.csv to a common schema.
+    """Normalise a coverage_by_generation.csv to a common schema.
 
     Output columns: gen_index, union_edges, best_edges.
       * union_edges = coverage held by the maintained set at that generation:
-        synth's per-gen population union (``population_union_edges``), or
-        direct's running pool union (``cumulative_union_edges``).
+        the running pool/population union (``cumulative_union_edges``).
       * best_edges = coverage of the single strongest member that generation
-        (``best_variant_edges`` / ``best_candidate_edges``).
+        (``best_candidate_edges``).
+
+    Both tools now share the unified header
+    ``generation,gen_index,num_candidates,best_candidate_edges,gen_union_edges,
+    cumulative_union_edges``; the legacy synth names are still accepted as a
+    fallback for any un-converted files.
     """
     src = os.path.join(run, "evolution", "coverage_by_generation.csv")
     if not os.path.isfile(src):
@@ -138,9 +142,9 @@ def extract_evolution(run: str, out_path: str) -> bool:
         return False
 
     cols = rows[0].keys()
-    # synth schema vs direct schema.
-    union_col = "population_union_edges" if "population_union_edges" in cols else "cumulative_union_edges"
-    best_col = "best_variant_edges" if "best_variant_edges" in cols else "best_candidate_edges"
+    # Unified schema, with the legacy synth column names as a fallback.
+    union_col = "cumulative_union_edges" if "cumulative_union_edges" in cols else "population_union_edges"
+    best_col = "best_candidate_edges" if "best_candidate_edges" in cols else "best_variant_edges"
     if union_col not in cols or best_col not in cols:
         print(f"  [evolution] unrecognised columns: {list(cols)}", file=sys.stderr)
         return False

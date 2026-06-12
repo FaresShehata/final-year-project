@@ -1,0 +1,76 @@
+{
+  "kind": "DeploymentSpec",
+  "metadata": {
+    "labels": { "team": "platform", "cost-center": "0042", "managed": true },
+    "annotations": null,
+    "revision": 17
+  },
+  "spec": {
+    "replicas": 3,
+    "enabled": true,
+    "rolloutStrategy": "canary",
+    "weights": [0.1, 0.25, 0.65],
+    "resources": {
+      "limits": { "cpu": "2000m", "memory": "4Gi" },
+      "requests": { "cpu": "500m", "memory": "1Gi" }
+    },
+    "ports": [
+      { "name": "http", "port": 8080, "protocol": "TCP", "exposed": true },
+      { "name": "metrics", "port": 9090, "protocol": "TCP", "exposed": false },
+      { "name": "grpc", "port": 50051, "protocol": "TCP", "exposed": true }
+    ]
+  },
+  "status": {
+    "conditions": [
+      {
+        "type": "Ready",
+        "message": "The deployment is ready.",
+        "status": "True",
+        "reason": "",
+        "lastTransitionTime": "2024-11-03T14:22:01.123Z"
+      }
+    ],
+    "deployment": {
+      "creationTimestamp": "2024-11-03T14:22:01.123Z",
+      "generation": 1,
+      "readyReplicas": 3,
+      "observedGeneration": 1,
+      "updatedReplicas": 3,
+      "availableReplicas": 3,
+      "replicas": 3,
+      "selector": {
+        "matchLabels": {"team":"platform","cost-center":"0042"}
+      }
+    },
+    "containers": [
+      {
+        "image": "mikekelly/myapp:v1.0.0",
+        "ports": [{ "containerPort": 80 }],
+        "env": []
+      }
+    ],
+    "securityContext": {},
+    "volumes": [],
+    "nodes": [{
+      "creationTimestamp": "2024-11-03T14:22:01.123Z",
+      "phase": "Running",
+      "node": "aks-nodepool1-41894653-vmss000000"
+    }]
+  },
+  "stringsToDecode": {
+    "escapeSequences": {
+      "newline": "line1\nline2",
+    "carriageReturn": "r1\rr2",
+    "tab": "col1\tcol2",
+    "hex": "0x410x420x43",
+    "xmlCData": "<cdata>414243</cdata>",
+    "octal": "o110o112o113",
+    },
+  "unicodeEscapes": {
+    "basic": "\u0041\u0042\u0043",
+    "nullChar": "\u0000",
+    "delete": "\u007f",
+    "highSurrogate": "\uD842\uDFB7",
+    "lowSurrogate": "\uDC65",
+    "noncharacters": "\uE000-\uF8FF\uD800-\uDFFF"
+  }

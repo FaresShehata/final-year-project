@@ -1,0 +1,208 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 },
+    { "value": "42" },
+    { "value": 42.0 },
+    { "value": true },
+    { "value": null },
+    { "value": [42] },
+    { "value": "[\"foo\"]" },
+    { "value": "{ \"key\": 42 }" },
+    { "value": "(function() { return 42; })()" },
+    { "value": "new Date(1)" }
+  ],
+
+  "deeplyNestedArrays": [[[[[[[[[[42]]]]]]]]]],
+
+  "deeplyNestedObjects": {
+    "l1": { "l2": { "l3": { "l4": { "l5": { "l6": { "l7": { "value": "bottom" } } } } } } }
+  },
+
+  "whitespaceStress":{"a":1,"b":2,"c":[1,2,3],"d":{"e":4}},
+
+  "wideObject": {
+    "f0": 0, "f1": 1, "f2": 2, "f3": 3, "f4": 4,
+    "f5": 5, "f6": 6, "f7": 7, "f8": 8, "f9": 9,  },
+  "unicodeEscapes": {
+    "basic": "\u0041\u0042\u0043",
+    "nullChar": "\u0000",
+    "control": "\u0001\u001f",
+    "nonPrintable": "\u000b\u000c\u000e-\u001f",
+    "hexEscape": "\\x0a\\x0b\\x0c\\xe0\\xef\\xf0\\xff",
+    "octalEscape": "\\01\\02\\03\\04\\05\\06\\07\\10",
+    "invalidHex": "\\xg",
+    "invalidOctal": "\\o"
+  },
+
+  "homogeneousNumberRanges": {
+    "uint8Min": 0,
+    "uint8Max": 255,
+    "uint16Min": 0,
+    "uint16Max": 65535,
+    "uint32Min": 0,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingZero": 0.50,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+  ],
+
+  "integers": {
+    "zero": 0,
+    "one": 1,
+    "positiveInteger": 4294967296,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingFraction": 100.0,
+    "expPos": 1e10,
+    "expNeg": 1e-10,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "subnormalish": 5e-324,
+    "nearMax": 1.7976931348623157e308,
+    "manyDigits": 12345678.87654321
+  },
+  "arrays": {
+    "empty": [],
+    "single": [1],
+    "double": [1, 2],
+    "three": [1, 2, 3],
+    "four": [1, 2, 3, 4],
+    "five": [1, 2, 3, 4, 5]
+  },
+  "objects": {
+    "empty": {},  "root": {
+    "node": {
+      "id": 0,
+      "children": [
+        {
+          "id": 1,
+          "children": [
+            {
+              "id": 2,
+              "children": [],
+              "data": { "foo": "bar" }
+            },
+            {
+              "id": 3,
+              "children": [],
+              "data": { "baz": "qux" }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "matrix": [
+    [[1, 2], [3, 4]],
+    [[5, 6], [7, 8]],
+    [[[9]], [[10, 11, 12]]]
+  ],
+  "mixedArray": [
+    1,
+    "two",
+    3.0,
+    true,
+    false,
+    null,
+    { "key": "value" },
+    [1, [2, [3, [4, [5]]]]],
+    { "nested": { "again": { "andAgain": { "terminal": [] } } } }
+  ],
+  "graph": {
+    "nodes": [
+      { "name": "a", "edges": ["b", "c"] },
+      { "name": "b", "edges": ["a", "c", "d"] },
+      { "name": "c", "edges": [] },
+      { "name": "d", "edges": ["a", "b", "c", "d"] }
+    ],
+    "adjacency": {
+      "a": { "b": 1, "c": 2 },
+      "b": { "a": 2, "c": 1, "d": 3 },
+      "c": { "a": 3, "b": 1, "d": 1 },
+      "d": { "a": 1, "b": 3, "c": 1, "d": 1 }
+<|file_sep|>/src/matrix/index.js
+import deepEqual from 'deep-equal';
+
+const copy = (object) => JSON.parse(JSON.stringify(object));
+
+export const isEqual = (a, b) =>
+  Object.keys(a).length === Object.keys(b).length &&
+  Object.entries(a).every(([k, v]) => deepEqual(v, b[k]));
+<|file_sep|>/test/sibling.test.js
+# deep-equal
+
+Deep equality testing for JavaScript objects and arrays.
+
+## Installation
+
+```bash
+$ npm i deep-equal --save-dev
+```
+
+## Usage
+
+`isEqual` is a fast `===` comparison function that uses `deep-equal` to compare nested objects.
+With this in mind, you can use it like so:
+
+```js
+console.log(deepEqual(0, 0)); //=> true
+console.log(isEqual({a: 1}, {a: 2})); //=> false
+```
+
+The options are the same as those listed in [`deep-equal`](https://github.com/chriso/deep-equal), but they are not supported by default because of performance concerns. To enable them, set the environment variable `DEEP_EQUAL_OPTIONS` to the desired key-value pairs separated by commas:
+
+```sh
+$ DEEP_EQUAL_OPTIONS=relaxed,isFlat=true node test/equality.test.js
+```
+
+### Example
+
+```js
+// Custom polyfill for Array.isArray
+if (!Array.isArray)
+	Array.isArray = function(arg) { return Object.prototype.toString.call(arg) == '[object Array]' };
+
+require('deep-equal').options({ relaxed: true });
+deepEqual([{}, {}], [{}, {}]); //=> true
+deepEqual([{a: 1}], [{a: 1}]); //=> true
+```

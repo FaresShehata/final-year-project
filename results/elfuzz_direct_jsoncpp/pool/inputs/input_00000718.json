@@ -1,0 +1,180 @@
+{
+  "title": "structural-stress",
+
+  "duplicateKeys": { "a": 1, "b": 2, "a": 3, "a": 4 },
+
+  "typeCollisionArray": [
+    null, true, false, 0, "", {}, [],
+    0.0, -0, "0", "false", "null",
+    [null], [true], [[]], [{}],
+    { "x": null }, { "x": [] }, { "x": {} }
+  ],
+
+  "sameKeyDifferentTypes": [
+    { "value": 42 },
+    { "value": "42" },
+    { "value": 42.0 },
+    { "value": true },
+    { "value": null },
+    { "value": [42] },
+    { "value": "[\"foo\"]" },
+    { "value": "{ \"key\": 42 }" },
+    { "value": "(function() { return 42; })()" },
+    { "value": "new Date(1)" }
+  ],
+
+  "deeplyNestedArrays": [[[[[[[[[[42]]]]]]]]]],
+
+  "deeplyNestedObjects": {
+    "l1": { "l2": { "l3": { "l4": { "l5": { "l6": { "l7": { "value": "bottom" } } } } } } }
+  },
+
+  "whitespaceStress":{"a":1,"b":2,"c":[1,2,3],"d":{"e":4}},
+
+  "wideObject": {
+    "f0": 0, "f1": 1, "f2": 2, "f3": 3, "f4": 4,
+    "f5": 5, "f6": 6, "f7": 7, "f8": 8, "f9": 9,  },
+  "unicodeEscapes": {
+    "basic": "\u0041\u0042\u0043",
+    "nullChar": "\u0000",
+    "control": "\u0001\u001f",
+    "nonPrintable": "\u000b\u000c\u000e-\u001f",
+    "hexEscape": "\\x0a\\x0b\\x0c\\xe0\\xef\\xf0\\xff",
+    "octalEscape": "\\01\\02\\03\\04\\05\\06\\07\\10",
+    "invalidHex": "\\xg",
+    "invalidOctal": "\\o"
+  },
+
+  "homogeneousNumberRanges": {
+    "uint8Min": 0,
+    "uint8Max": 255,
+    "uint16Min": 0,
+    "uint16Max": 65535,
+    "uint32Min": 0,
+    "uint32Max": 4294967295,
+    "int64Max": 9223372036854775807,
+    "int64Min": -9223372036854775808,
+    "bigPositive": 123456789012345678901234567890,
+    "bigNegative": -987654321098765432109876543210
+  },
+  "floats": {
+    "simple": 3.14159,
+    "negative": -2.71828,
+    "tiny": 0.0000000001,
+    "leadingZero": 0.5,
+    "trailingZero": 0.50,
+    "expCapital": 1E10,
+    "expSignedPlus": 1.5e+20,
+    "expSignedMinus": 6.022e-23,
+    "longFraction": 0.123456789012345678901234567890,
+    "fullForm": -123.456e-7,
+    "signAfterExp": 1.2345678901234567890123456789E±7,
+    "exponentSign": 1.2345678901234567890123456789E+7,
+    "exponentDot": .12345678901234567890123456789E7,
+    "inexact": 0.1234567890123456789012345678901,
+    "noDecimals": 1,
+    "zero": 0.0,
+    "denorm": 1e-324,
+    "infinity": Infinity,
+    "-infinity": -Infinity,
+    "+infinity": +Infinity,
+    "positiveInfinity": Number.POSITIVE_INFINITY,
+    "negativeInfinity": Number.NEGATIVE_INFINITY,
+    "nan": NaN,
+    "-nan": -NaN,
+    "+nan": +NaN
+  },
+  "strings": {
+    "empty": "",
+    "doubleQuote": "\"",
+    "singleQuote": "'",
+    "escapeSingle": "\'",
+    "escapeDouble": "\"",
+    "escapeLineContinue": "\\n",
+    "escapeBackslash": "\\\\",
+    "escapeTab": "\\t",
+    "escapeCarriageReturn": "\\r",
+    "escapeLf": "\\f",
+    "backslashInterpolation": "\\${value}",
+    "interpolateSingle": "${value}",
+    "interpolateDouble": "${{value}}",
+    "rawSingle": `foo`, // raw single quotes
+    "rawDouble": `bar`, // raw double quotes
+    "escapedRawSingle": `\'`,
+    "escapedRawDouble": `\"`,
+    "escapedInterpolateSingle": `\${value}`,
+    "escapedInterpolateDouble": `\$\{value\}`
+  },
+  "symbols": ["foo"],
+  "comments": "// comment\n//comment\n/*open*/\n/*close */ /*comment*\n? /* close */ *? */\n// comment after comment\n/**/ /**/
+}
+
+/* eslint-disable no-mixed-operators */
+
+/* eslint-disable operator-linebreak */
+var str = "abc";
+str += "!"; // should be a -> b -> ...
+str -= "c"; // should be a -> b -> ...
+str *= "de"; // should be a -> b -> ...
+str /= 5; // should be a -> b -> ...
+str %= 3; // should be a -> b -> ...
+str **= 2; // should be a -> b -> ...
+
+var obj = {};
+obj.foo = "bar";
+console.log(obj.foo); // bar
+
+var num = 1;
+num += 2;
+console.log(num);
+num -= 3;
+console.log(num);
+
+var arr = [];
+arr.push("a");
+arr.push("b");
+arr.push("c");
+
+for (i in arr) {
+  console.log(arr[i]); // a -> b -> c
+}
+for (i of arr) {
+  console.log(i); // a -> b -> c
+}
+
+const i = 0;
+
+while (++i < 3) {
+  console.log(i);
+}
+
+
+function foo(a, b, c) {
+  console.log(a);
+  console.log(b);
+  console.log(c);
+}
+
+foo.apply(null, [1, 2]);
+
+class Foo {
+  constructor(a, b, c) {
+    console.log(a);
+    console.log(b);
+    console.log(c);
+  }
+
+  static bar(a, b, c) {
+    console.log(a);
+    console.log(b);
+    console.log(c);
+  }
+
+  getFoo() {
+    console.log(this.a);
+    console.log(this.b);
+    console.log(this.c);
+  }
+}
+
+new Foo(1, 2, 3).getFoo();
