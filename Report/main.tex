@@ -65,9 +65,9 @@
 \usepackage{xurl}
 
 % TODO: pick a final name for the tool and update it here. It is used
-\newcommand{\toolname}{DLFuzz}
+\newcommand{\toolname}{DCLFuzz}
 
-\title{\toolname{}: Direct Input Generation with LLMs for Fuzzing}
+\title{\toolname{}: Direct Coverage-Driven Input Generation with LLMs for Fuzzing}
 \author{Fares Shehata}
 
 \begin{document}
@@ -76,7 +76,7 @@
 \begin{abstract}
 Software underpins almost every part of modern life, and the cost of software defects is enormous, running into the trillions of dollars each year. Thorough testing is therefore essential, but writing tests that exercise the many corner cases of a complex program by hand is difficult and time-consuming. Fuzzing has become one of the most effective automated ways to find bugs: it runs a program on large numbers of generated or mutated inputs and watches for failures, and has uncovered critical vulnerabilities in compilers, operating systems, and other widely used software. How well a fuzzing campaign performs, however, depends heavily on the quality and diversity of the seed inputs it starts from.
 
-At the same time, large language models (LLMs) have rapidly grown in capability and prevalence, and have begun to be applied to fuzzing - for instance, to synthesise input generators guided by code coverage. We introduce \toolname{}, a tool that instead uses an LLM to generate seed inputs \emph{directly}, evolving a pool of inputs under coverage feedback rather than evolving a program that produces them. We compare \toolname{} against the original generator-synthesis approach on two systems under test of differing complexity. We find that, although direct generation produces smaller, lower-coverage seed corpora, it reaches broadly comparable coverage once those seeds are handed to a downstream mutation fuzzer. We discuss why this happens, the limitations of the approach, and directions for making direct input generation more competitive.
+At the same time, large language models (LLMs) have rapidly grown in capability and prevalence, and have begun to be applied to fuzzing - for instance, to synthesise input generators guided by code coverage. We introduce \toolname{}, a tool that instead uses an LLM to generate seed inputs \emph{directly}, evolving a pool of inputs under coverage feedback rather than evolving a program that produces them. We compare \toolname{} against the original generator-synthesis approach on two systems under test of differing complexity. We find that, although direct generation produces smaller, lower-coverage seed corpora, it reaches comparable coverage once those seeds are handed to a downstream mutation fuzzer. We discuss why this happens, the limitations of the approach, and directions for making direct input generation more competitive.
 \end{abstract}
 
 \renewcommand{\abstractname}{Acknowledgements}

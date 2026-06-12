@@ -4,13 +4,13 @@
 
 \section{Fuzzing}
 
-Fuzzing is an automated software testing technique that exercises a system under test (SUT) with large numbers of inputs - often randomly generated or systematically mutated - and observes the SUT for failures or other “interesting” behaviours \cite{miller_1990_an,miller_2006_fuzz}. Historically, seminal studies by Miller and colleagues demonstrated that random inputs could reliably uncover robustness issues in UNIX utilities and services, popularizing the approach and coining the term “fuzz” \cite{miller_1990_an,miller_2006_fuzz}. At minimum, a fuzzing campaign requires (i) a mechanism to obtain test inputs (e.g., via generation or mutation), and (ii) an oracle to judge whether an execution is interesting (e.g., crashes, sanitizer-detected undefined behaviour, coverage increases, or differential inconsistencies) \cite{bhme_2016_coveragebased,serebryany_2012_addresssanitizer,llvmproject_2015_memorysanitizer,llvmproject_2015_undefinedbehaviorsanitizer,serebryany_2009_threadsanitizer,le_2014_compiler}. The term “fuzzing” encompasses multiple sub-categories: generation-based vs. mutation-based input creation, and black-box vs. grey-box vs. white-box feedback. These categories trade off generality, required access to the SUT, and effectiveness \cite{miller_2006_fuzz,bhme_2016_coveragebased}.
+Fuzzing is an automated software testing technique that exercises a system under test with large numbers of inputs - often randomly generated or systematically mutated - and observes the SUT for failures or other ``interesting'' behaviours \cite{miller_1990_an,miller_2006_fuzz}. Historically, seminal studies by Miller and colleagues demonstrated that random inputs could reliably uncover robustness issues in UNIX utilities and services, popularising the approach and coining the term ``fuzz'' \cite{miller_1990_an,miller_2006_fuzz}. At minimum, a fuzzing campaign requires (i) a mechanism to obtain test inputs (e.g., via generation or mutation), and (ii) an oracle to judge whether an execution is interesting (e.g., crashes, sanitizer-detected undefined behaviour, coverage increases, or differential inconsistencies) \cite{bhme_2016_coveragebased,serebryany_2012_addresssanitizer,llvmproject_2015_memorysanitizer,llvmproject_2015_undefinedbehaviorsanitizer,serebryany_2009_threadsanitizer,le_2014_compiler}. The term ``fuzzing'' encompasses multiple sub-categories: generation-based vs. mutation-based input creation, and black-box vs. grey-box vs. white-box feedback. These categories trade off generality, required access to the SUT, and effectiveness \cite{miller_2006_fuzz,bhme_2016_coveragebased}.
 
-Oracles can be defined in several ways. Classical “crash oracles” detect fatal signals or abnormal exits. Sanitizer oracles detect memory and concurrency errors at runtime - for example, AddressSanitizer (ASan) for buffer overflows and use-after-free \cite{serebryany_2012_addresssanitizer}, MemorySanitizer (MSan) for uses of uninitialized memory \cite{llvmproject_2015_memorysanitizer}, UndefinedBehaviorSanitizer (UBSan) for undefined language behaviors \cite{llvmproject_2015_undefinedbehaviorsanitizer}, and ThreadSanitizer (TSan) for data races \cite{serebryany_2009_threadsanitizer}. Coverage change can also serve as a meta-oracle to prioritize inputs that explore previously unseen code \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}. Finally, differential testing oracles flag behavioural inconsistencies across multiple implementations or compiler/toolchain variants (e.g., Csmith-based cross-compiler testing, or Equivalence Modulo Inputs) \cite{yang_2011_finding,le_2014_compiler}.
+Oracles can be defined in several ways. Classical ``crash oracles'' detect fatal signals or abnormal exits. Sanitizer oracles detect memory and concurrency errors at runtime - for example, AddressSanitizer (ASan) for buffer overflows and use-after-free \cite{serebryany_2012_addresssanitizer}, MemorySanitizer (MSan) for uses of uninitialised memory \cite{llvmproject_2015_memorysanitizer}, UndefinedBehaviorSanitizer (UBSan) for undefined language behaviours \cite{llvmproject_2015_undefinedbehaviorsanitizer}, and ThreadSanitizer (TSan) for data races \cite{serebryany_2009_threadsanitizer}. Coverage change can also serve as a meta-oracle to prioritise inputs that explore previously unseen code \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}. Finally, differential testing oracles flag behavioural inconsistencies across multiple implementations or compiler/toolchain variants (e.g., Csmith-based cross-compiler testing, or Equivalence Modulo Inputs) \cite{yang_2011_finding,le_2014_compiler}.
 
 \subsection{Generation-based fuzzing}
 
-Generation-based fuzzers synthesize inputs from scratch, often guided by formal grammars or input specifications, to produce syntactically valid (and sometimes semantically constrained) test cases \cite{aschermann_2019_nautilus,holler_2012_fuzzing}. This approach is powerful when a grammar or model is available and correctness of the input structure is important. Representative systems include:
+Generation-based fuzzers synthesise inputs from scratch, often guided by formal grammars or input specifications, to produce syntactically valid (and sometimes semantically constrained) test cases \cite{aschermann_2019_nautilus,holler_2012_fuzzing}. This approach is powerful when a grammar or model is available and correctness of the input structure is important. Representative systems include:
 
 \begin{itemize}
     \item \textbf{Csmith}, which generates well-defined C programs to differentially test compilers while avoiding undefined behaviour \cite{yang_2011_finding};
@@ -24,23 +24,23 @@ A known challenge for generation-based fuzzing is probabilistic bias: the distri
 
 Mutation-based fuzzers derive new inputs by mutating existing seeds, leveraging that real inputs satisfy many syntactic/semantic constraints and thus can bypass shallow checks \cite{bhme_2016_coveragebased}. Mutations range from low-level bit/byte flips and arithmetic on integers, to structural operators such as block insertion/deletion/duplication, splicing segments from multiple seeds, and dictionary/token-aware rewrites \cite{serebryany_2016_libfuzzer}. For example, in the AFL/AFL++ family of grey-box mutation fuzzers \cite{fioraldi_2020_aflplusplus}, the fuzzing loop is feedback-directed and proceeds roughly as follows:
 \begin{enumerate}
-  \item Initialize a queue (corpus) from seed inputs.
-  \item Select a seed according to a power schedule that favours seeds with higher novelty/coverage potential, allocating them more mutation “energy” \cite{bhme_2016_coveragebased}.
-  \item Apply a sequence of mutation stages, including deterministic bit/byte flips and small arithmetic tweaks, followed by randomized “havoc” (stacked mutations) and optional splicing with other seeds.
-  \item Execute the mutated input on an instrumented target using a low-overhead execution model (e.g., forkserver or persistent/in-process execution) to maximize throughput, with instrumentation added at compile time or via binary-level dynamic translation when source is unavailable \cite{bhme_2016_coveragebased,bellard_2005_qemu,luk_2005_pin,serebryany_2016_libfuzzer}.
-  \item Record the coverage bitmap (e.g., edge coverage with hitcounts) and, if the input exercises previously unseen edges or yields a sufficiently “interesting” coverage change, enqueue it as a new seed and update scheduling statistics.
-  \item Triage, deduplicate (e.g., by coverage/signature), and minimize crashing inputs for efficient regression testing.
+  \item Initialise a queue (corpus) from seed inputs.
+  \item Select a seed according to a power schedule that favours seeds with higher novelty/coverage potential, allocating them more mutation ``energy'' \cite{bhme_2016_coveragebased}.
+  \item Apply a sequence of mutation stages, including deterministic bit/byte flips and small arithmetic tweaks, followed by randomised ``havoc'' (stacked mutations) and optional splicing with other seeds.
+  \item Execute the mutated input on an instrumented target using a low-overhead execution model (e.g., forkserver or persistent/in-process execution) to maximise throughput, with instrumentation added at compile time or via binary-level dynamic translation when source is unavailable \cite{bhme_2016_coveragebased,bellard_2005_qemu,luk_2005_pin,serebryany_2016_libfuzzer}.
+  \item Record the coverage bitmap (e.g., edge coverage with hitcounts) and, if the input exercises previously unseen edges or yields a sufficiently ``interesting'' coverage change, enqueue it as a new seed and update scheduling statistics.
+  \item Triage, deduplicate (e.g., by coverage/signature), and minimise crashing inputs for efficient regression testing.
 \end{enumerate}
 AFL++ extends this loop with numerous engineering improvements (e.g., richer mutation operators and scheduling heuristics, dictionaries, context-sensitive coverage, and persistent execution modes) \cite{fioraldi_2020_aflplusplus} while retaining the same core principle: lightweight feedback steers mutations toward inputs that explore novel paths and uncover deeper bugs \cite{bhme_2016_coveragebased}.
 
-While highly effective, mutation-based fuzzing is sensitive to seed quality and diversity: a narrow seed set can trap the search in local minima, whereas diverse seeds improve parser pass rates and enable deeper exploration. Consequently, corpus management (seed curation, minimization/deduplication, and power scheduling) is a first-class concern in production fuzzers \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
+While highly effective, mutation-based fuzzing is sensitive to seed quality and diversity: a narrow seed set can trap the search in local minima, whereas diverse seeds improve parser pass rates and enable deeper exploration. Consequently, corpus management (seed curation, minimisation/deduplication, and power scheduling) is a first-class concern in production fuzzers \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
 
 \subsection{Black-box, grey-box, and white-box feedback}
 
 Feedback-directed fuzzing adapts input generation/mutation based on information obtained from the SUT \cite{bhme_2016_coveragebased}. The extent and type of information distinguishes three broad modes:
 
 \begin{itemize}
-    \item \textbf{Black-box} fuzzing executes the unmodified SUT and observes only external outcomes (exit codes, crashes, timing). It suits closed-source targets and can maximize throughput but offers limited guidance. Differential testing of compilers with Csmith is largely black-box with respect to compiler internals \cite{yang_2011_finding}.
+    \item \textbf{Black-box} fuzzing executes the unmodified SUT and observes only external outcomes (exit codes, crashes, timing). It suits closed-source targets and can maximise throughput but offers limited guidance. Differential testing of compilers with Csmith is largely black-box with respect to compiler internals \cite{yang_2011_finding}.
 
     \item \textbf{Grey-box} fuzzing uses lightweight instrumentation to obtain coarse-grained internal signals - most commonly edge or branch coverage, value profiling, and sanitizer findings - balancing guidance and throughput. Instrumentation can be added at compile time (e.g., compiler-based edge counters and sanitizer hooks, as in libFuzzer/Clang) or at the binary level via dynamic instrumentation (e.g., Pin) or dynamic translation/emulation (e.g., QEMU), with some performance cost \cite{serebryany_2016_libfuzzer,luk_2005_pin,bellard_2005_qemu}.
 
@@ -56,14 +56,14 @@ Sanitizers enrich oracles by detecting classes of undefined or erroneous behavio
 \begin{itemize}
     \item \textbf{AddressSanitizer (ASan)} detects invalid memory accesses (buffer overflows, use-after-free) with relatively low overhead. \cite{serebryany_2012_addresssanitizer}.
     
-    \item \textbf{MemorySanitizer (MSan)} detects uses of uninitialized memory \cite{llvmproject_2015_memorysanitizer}.
+    \item \textbf{MemorySanitizer (MSan)} detects uses of uninitialised memory \cite{llvmproject_2015_memorysanitizer}.
     
     \item \textbf{UndefinedBehaviorSanitizer (UBSan)} detects undefined behaviours such as signed integer overflows and invalid shifts \cite{llvmproject_2015_undefinedbehaviorsanitizer}.
     
     \item \textbf{ThreadSanitizer (TSan)} detects data races in multithreaded programs \cite{serebryany_2009_threadsanitizer}.
 \end{itemize}
 
-Collectively, coverage and sanitizers serve both as guidance signals and as oracles of “interestingness,” enabling fuzzers to triage and minimize crashing or sanitizer-violating inputs \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
+Collectively, coverage and sanitizers serve both as guidance signals and as oracles of ``interestingness,'' enabling fuzzers to triage and minimise crashing or sanitizer-violating inputs \cite{bhme_2016_coveragebased,serebryany_2016_libfuzzer}.
 
 
 
@@ -72,9 +72,9 @@ Collectively, coverage and sanitizers serve both as guidance signals and as orac
 
 \section{LLMs}
 
-Large language models (LLMs) are neural networks trained to predict sequences of tokens and thereby generate, understand, and reason about text and code. The decisive architectural breakthrough was the Transformer, which replaced recurrence with self‑attention, enabling efficient parallel training and better modelling of long‑range dependencies \cite{vaswani_2017_attention}. From this foundation, families of models diversified: encoder‑only models for representation learning (e.g., BERT) \cite{devlin_2018_bert}; decoder‑only, autoregressive models that excel at in‑context learning and few‑shot generalisation (e.g., GPT‑3) \cite{brown_2020_language}; and, at larger scales, systems such as PaLM that demonstrated gains from the triumvirate of data, parameters, and compute \cite{chowdhery_2022_palm}. Alignment advances, notably instruction tuning and reinforcement learning from human feedback (RLHF), further improved models’ ability to follow natural instructions safely and reliably \cite{ouyang_2022_training}. Open foundation models (e.g., LLaMA) broadened access and accelerated downstream innovation \cite{touvron_2023_llama}, while code‑specialised LLMs (e.g., StarCoder and Code Llama) brought stronger capabilities to software engineering tasks \cite{li_2023_starcoder,rozire_2024_code}.
+Large language models (LLMs) are neural networks trained to predict sequences of tokens and thereby generate, understand, and reason about text and code. The decisive architectural breakthrough was the Transformer, which replaced recurrence with self-attention, enabling efficient parallel training and better modelling of long-range dependencies \cite{vaswani_2017_attention}. From this foundation, families of models diversified: encoder-only models for representation learning (e.g., BERT) \cite{devlin_2018_bert}; decoder-only, autoregressive models that excel at in-context learning and few-shot generalisation (e.g., GPT-3) \cite{brown_2020_language}; and, at larger scales, systems such as PaLM that demonstrated gains from the triumvirate of data, parameters, and compute \cite{chowdhery_2022_palm}. Alignment advances, notably instruction tuning and reinforcement learning from human feedback (RLHF), further improved models' ability to follow natural instructions safely and reliably \cite{ouyang_2022_training}. Open foundation models (e.g., LLaMA) broadened access and accelerated downstream innovation \cite{touvron_2023_llama}, while code-specialised LLMs (e.g., StarCoder and Code Llama) brought stronger capabilities to software engineering tasks \cite{li_2023_starcoder,rozire_2024_code}.
 
-In software testing, LLMs have been adopted to reduce the cost of writing target‑specific generators and harnesses, and to expand test diversity across languages and evolving features. For compilers and language processors, LLMs can automatically produce diverse, valid programmes that increase coverage and expose nuanced feature interactions \cite{xia_2023_universal,chen_2020_a}. White‑box flows integrate LLMs with compiler analyses to derive targeted test cases for particular optimisation passes \cite{yang_2023_whitebox}. Beyond test synthesis, LLMs help generate fuzz drivers and adapt prompts from documentation, cutting set‑up time for continuous fuzzing \cite{lyu_2024_prompt,jeong_2023_utopia}. In lower‑level domains, code‑aware LLMs have been used to exercise deep kernel execution paths and uncover subtle defects \cite{yang_2025_kernelgpt}. Empirically, universal LLM fuzzers demonstrate significant coverage gains and numerous bug findings across compilers, SMT solvers, and quantum stacks, illustrating the breadth and productivity benefits of LLM‑assisted testing \cite{xia_2023_universal,lin_2025_lmfuzz}.
+In software testing, LLMs have been adopted to reduce the cost of writing target-specific generators and harnesses, and to expand test diversity across languages and evolving features. For compilers and language processors, LLMs can automatically produce diverse, valid programmes that increase coverage and expose nuanced feature interactions \cite{xia_2023_universal,chen_2020_a}. White-box flows integrate LLMs with compiler analyses to derive targeted test cases for particular optimisation passes \cite{yang_2023_whitebox}. Beyond test synthesis, LLMs help generate fuzz drivers and adapt prompts from documentation, cutting set-up time for continuous fuzzing \cite{lyu_2024_prompt,jeong_2023_utopia}. In lower-level domains, code-aware LLMs have been used to exercise deep kernel execution paths and uncover subtle defects \cite{yang_2025_kernelgpt}. Empirically, universal LLM fuzzers demonstrate significant coverage gains and numerous bug findings across compilers, SMT solvers, and quantum stacks, illustrating the breadth and productivity benefits of LLM-assisted testing \cite{xia_2023_universal,lin_2025_lmfuzz}.
 
 Nonetheless, naively sampling large models can yield low validity - especially in strict languages - and waste SUT cycles. Practical systems therefore combine LLM generation with principled loops that distil prompts, adapt generation strategies, and repair errors on the fly to raise the proportion of valid tests and sustain exploration \cite{xia_2023_universal,lin_2025_lmfuzz}. Looking ahead, hybrid designs that pair selective feedback signals (e.g., simple coverage counters or domain oracles) with LLM breadth are likely to deepen path exploration further, while maintaining portability across languages and SUTs.
 
@@ -86,13 +86,13 @@ Nonetheless, naively sampling large models can yield low validity - especially i
 
 \subsection{ELFuzz}
 
-ELFuzz proposes a new method of LLM-based fuzzing: instead of directly generating test inputs, it uses an LLM to synthesize generation-based fuzzers themselves, and then evolves those fuzzers using a coverage-guided notion of “fuzzer space”, until they become strong seed generators for downstream mutation fuzzers (e.g., AFL++). This decomposition turns the hard problem of writing a good generator into many small, LLM-friendly code edits with quantitative feedback at each step \cite{chen_2025_elfuzz}.
+ELFuzz proposes a new method of LLM-based fuzzing: instead of directly generating test inputs, it uses an LLM to synthesise generation-based fuzzers themselves, and then evolves those fuzzers using a coverage-guided notion of ``fuzzer space'', until they become strong seed generators for downstream mutation fuzzers (e.g., AFL++). This decomposition turns the hard problem of writing a good generator into many small, LLM-friendly code edits with quantitative feedback at each step \cite{chen_2025_elfuzz}.
 
-The motivation behind this approach is that building a high-quality generation‑based fuzzer is difficult, as human‑written grammars and semantic constraints are hard to author and maintain at scale. By generating and evolving a collection of fuzzers with an LLM, and ranking them by the coverage they achieve, the burden of manual specification is shifted to the model while progress is governed by an objective measure. 
+The motivation behind this approach is that building a high-quality generation-based fuzzer is difficult, as human-written grammars and semantic constraints are hard to author and maintain at scale. By generating and evolving a collection of fuzzers with an LLM, and ranking them by the coverage they achieve, the burden of manual specification is shifted to the model while progress is governed by an objective measure. 
 
 \subsubsection{How ELFuzz works}
 
-ELFuzz implements an iterative three-stage evolution loop; each iteration “climbs” toward stronger fuzzers (Figure 2 and Figure 3 in the paper):
+ELFuzz implements an iterative three-stage evolution loop; each iteration ``climbs'' toward stronger fuzzers (Figure 2 and Figure 3 in the paper):
 
 \lilspace
 \textit{(1) LLM-driven mutation}
@@ -102,28 +102,26 @@ Given a current pool of candidate fuzzers (small programs that emit inputs), ELF
 \begin{itemize}
     \item Splicing: combine head of one fuzzer with tail of another using fill-in-the-middle to glue the junction. This merges strengths of two candidates in one mutant.
     \item Completion: truncate a candidate at a random point and let the LLM complete the remainder, often adding missing logic and utility calls.
-    \item Infilling: remove internal lines (“holes”) and let the LLM fill them while maintaining consistency with surrounding code.
+    \item Infilling: remove internal lines (``holes'') and let the LLM fill them while maintaining consistency with surrounding code.
 \end{itemize}
 
-These operations leverage modern LLM editing capabilities to produce syntactically valid, semantically meaningful variants that can plausibly generate more diverse and valid inputs than naive random code edits..
-
-Ablation results show that removing the fuzzer‑space model hurts the most, and among mutators, removing splicing causes the largest degradation (up to 26.2\% on several benchmarks), consistent with its role in fusing complementary strengths.
+These operations leverage modern LLM editing capabilities to produce syntactically valid, semantically meaningful variants that can plausibly generate more diverse and valid inputs than naive random code edits.
 
 \lilspace
 \textit{(2) Fuzzer space exploration (coverage-based strength analysis)}
 
-Each mutant (and existing seed fuzzer) is executed briefly to approximate the “cover set” of code elements (edges) it can reach in the SUT.
+Each mutant (and existing seed fuzzer) is executed briefly to approximate the ``cover set'' of code elements (edges) it can reach in the SUT.
 
 Let $C(F)$ and $S(F)$ denote the cover set and strength of a fuzzer $F$ respectively. ELFuzz defines a strength pre-order:
 \[
     S(F_i) \sqsubset S(F_j)\quad \iff \quad C(F_i) \subset C(F_j)
 \]
-Mutants strictly weaker than their seed parents (e.g., due to type errors or reduced coverage) are discarded; those that introduce new coverage are retained. Because different fuzzers can cover disjoint regions, some are incomparable (neither subset nor superset). This induces a lattice structure - the “fuzzer space” - over candidate generators. Crucially, it enables fine‑grained comparisons that a single scalar (e.g., total coverage count) would obscure.
+Mutants strictly weaker than their seed parents (e.g., due to type errors or reduced coverage) are discarded; those that introduce new coverage are retained. Because different fuzzers can cover disjoint regions, some are incomparable (neither subset nor superset). This induces a lattice structure - the ``fuzzer space'' - over candidate generators. Crucially, it enables fine-grained comparisons that a single scalar (e.g., total coverage count) would obscure.
 
 \lilspace
-\textit{(3) Max‑cover selection (elite picking to prevent pool blow‑up)}
+\textit{(3) Max-cover selection (elite picking to prevent pool blow-up)}
 
-To keep the population small and diverse, ELFuzz selects a fixed number $(N)$ of elites whose union of cover sets is maximized. Let $V$ be a pool of fuzzers, and $E \subset V$ be the subset which maximises the union of cover sets. $\mathcal{P}_{N}(V)$ represents all $N$-element subsets of $V$. Thus, we have:
+To keep the population small and diverse, ELFuzz selects a fixed number $(N)$ of elites whose union of cover sets is maximised. Let $V$ be a pool of fuzzers, and $E \subset V$ be the subset which maximises the union of cover sets. $\mathcal{P}_{N}(V)$ represents all $N$-element subsets of $V$. Thus, we have:
 
 \[
 E =  \underset{S\in \mathcal{P}_{N}(V)}{\mathrm{argmax}} \left|\bigcup \left\{ \mathcal{C}\left( F \right) \middle| F\in S  \right\}\right|
@@ -134,60 +132,60 @@ A greedy approximation (with re-seeding heuristics) is used to avoid an exponent
 \lilspace
 \textit{Implementation notes:}
 
-The design is LLM-agnostic. The paper uses a local CodeLlama‑13B model for cost reasons, with short prompts that state the SUT and format hints in comments. The entire evolution controller and fuzzer‑space analysis are lightweight Python (3.6 KLoC) compared to classic grammar pipelines (e.g., 80 KLoC for Csmith) \cite{yang_2011_finding,chen_2025_elfuzz}.
+The design is LLM-agnostic. The paper uses a local CodeLlama-13B model for cost reasons, with short prompts that state the SUT and format hints in comments. The entire evolution controller and fuzzer-space analysis are lightweight Python (3.6 KLoC) compared to classic grammar pipelines (e.g., 80 KLoC for Csmith) \cite{yang_2011_finding,chen_2025_elfuzz}.
 
-Coverage is approximated by executing a limited number of generated tests per candidate and recording edge coverage; this “quick probe” is sufficient to rank candidates and guide search while keeping the loop fast \cite{chen_2025_elfuzz,gnuproject_2024_gcov}.
+Coverage is approximated by executing a limited number of generated tests per candidate and recording edge coverage; this ``quick probe'' is sufficient to rank candidates and guide search while keeping the loop fast \cite{chen_2025_elfuzz,gnuproject_2024_gcov}.
 
 \subsubsection{Benchmarks and reported results}
 
-Subjects under test (seven real‑world SUTs, up to ~1.79 MLoC) include structured formats and interpreters: jsoncpp (JSON), libxml2 (XML), re2 (RegEx), CPython (Python), cvc5 (SMT‑LIB2), SQLite (SQL), and librsvg (SVG). Baselines include grammar‑based and constraint‑based input generators (e.g., GLADE/ANTLR pipelines and ISLA constraints) translated or adapted as needed for fair comparison.
+Subjects under test (seven real-world SUTs, up to $\sim$1.79 MLoC) include structured formats and interpreters: jsoncpp (JSON), libxml2 (XML), re2 (RegEx), CPython (Python), cvc5 (SMT-LIB2), SQLite (SQL), and librsvg (SVG). Baselines include grammar-based and constraint-based input generators (e.g., GLADE/ANTLR pipelines and ISLA constraints) translated or adapted as needed for fair comparison.
 
 \lilspace
-\textit{Input‑generation effectiveness (RQ1):}
+\textit{Input-generation effectiveness (RQ1):}
 
-ELFuzz’s synthesised fuzzers generate seed corpora with much higher coverage within 10 minutes; the paper reports up to 434.8\% more covered edges than the second‑best technique on cvc5, and consistent advantages across the other SUTs (Figures 7 and 8).
-
-\lilspace
-\textit{Bug‑finding with AFL++ (RQ2):}
-
-Using ELFuzz seeds, AFL++ triggers more bugs and reaches milestones faster. On some targets (e.g., SQLite), ELFuzz seeds lead to up to 216.7\% more injected bugs found within 24 hours, and lower time‑to‑25/50/75\% of total bugs compared to the next best baseline (Table 6; Figure 9).
+ELFuzz's synthesised fuzzers generate seed corpora with much higher coverage within 10 minutes; the paper reports up to 434.8\% more covered edges than the second-best technique on cvc5, and consistent advantages across the other SUTs (Figures 7 and 8).
 
 \lilspace
-\textit{\sloppy Real‑world campaign (RQ2, cvc5):}
+\textit{Bug-finding with AFL++ (RQ2):}
 
-Over 14 days with 30 AFL++ instances, the ELFuzz‑seeded campaign found five previously unknown bugs; three were exploitable. Some were fixed upstream during the study (Appendix C).
+Using ELFuzz seeds, AFL++ triggers more bugs and reaches milestones faster. On some targets (e.g., SQLite), ELFuzz seeds lead to up to 216.7\% more injected bugs found within 24 hours, and lower time-to-25/50/75\% of total bugs compared to the next best baseline (Table 6; Figure 9).
+
+\lilspace
+\textit{\sloppy Real-world campaign (RQ2, cvc5):}
+
+Over 14 days with 30 AFL++ instances, the ELFuzz-seeded campaign found five previously unknown bugs; three were exploitable. Some were fixed upstream during the study (Appendix C).
 
 \lilspace
 \textit{Ablation study (RQ3):}
 
-Removing the fuzzer‑space model (ELFuzz‑NoFS) drops performance the most (gaps from 6.6\% to 62.5\% vs. the full system). Among mutators, removing splicing (ELFuzz‑NoSP) yields the largest additional drop (up to 26.2\%), while removing completion or infilling usually has smaller effects—consistent with splicing’s role in combining complementary behaviours.
+Removing the fuzzer-space model (ELFuzz-NoFS) drops performance the most (gaps from 6.6\% to 62.5\% vs. the full system). Among mutators, removing splicing (ELFuzz-NoSP) yields the largest additional drop (up to 26.2\%), while removing completion or infilling usually has smaller effects - consistent with splicing's role in combining complementary behaviours.
 
 \lilspace
 \textit{Interpretable/extensible generators (RQ4):}
 
-Case studies on SQLite show synthesised fuzzers encode non-trivial features (e.g., command‑line pragma handling, query sorting) and can be extended by external techniques such as Zest‑style coverage‑guided parameter evolution (Appendix E).
+Case studies on SQLite show synthesised fuzzers encode non-trivial features (e.g., command-line pragma handling, query sorting) and can be extended by external techniques such as Zest-style coverage-guided parameter evolution (Appendix E).
 
 \lilspace
 \textit{Cost and practicality:}
 
-Synthesis time is a one‑off pre‑fuzzing cost (hours, varying by SUT), after which the synthesised generators are fast to run. The paper discusses a trade‑off: heavy synthesis can reduce “wall‑clock” available for subsequent mutation fuzzing, but the improved seeds often outweigh this cost in coverage and bug‑finding speed.
+Synthesis time is a one-off pre-fuzzing cost (hours, varying by SUT), after which the synthesised generators are fast to run. The paper discusses a trade-off: heavy synthesis can reduce ``wall-clock'' available for subsequent mutation fuzzing, but the improved seeds often outweigh this cost in coverage and bug-finding speed.
 
 \subsubsection{Limitations mentioned in the paper}
 
 \begin{itemize}
-    \item The prototype initializes from very simple random‑byte seed generators for generality. Using stronger initial templates (or LLM‑discovered protocol/grammar hints) could further improve convergence.
-    \item If an SUT’s input language is poorly represented in the LLM’s training data (e.g., proprietary/binary formats), the LLM’s edits may lack the priors needed to synthesize good fuzzers. Prompt engineering or fine‑tuning may be required, and purely binary formats remain challenging.
-    \item  ELFuzz currently optimizes the input‑generation stage that seeds AFL++. Maintaining diversity continually throughout the entire mutation campaign (dynamic co‑evolution of seeds) is not explored and is a direction for future work.
-    \item On some targets, ELFuzz spends tens of minutes synthesizing seeds before the AFL++ phase; while seeds speed up bug discovery thereafter, the up‑front cost can matter under tight time budgets.
-    \item \sloppy Results were achieved with a small local 13B parameter model. Larger models or tool‑augmented prompting could improve edits, but at higher compute cost.
+    \item The prototype initialises from very simple random-byte seed generators for generality. Using stronger initial templates (or LLM-discovered protocol/grammar hints) could further improve convergence.
+    \item If an SUT's input language is poorly represented in the LLM's training data (e.g., proprietary/binary formats), the LLM's edits may lack the priors needed to synthesise good fuzzers. Prompt engineering or fine-tuning may be required, and purely binary formats remain challenging.
+    \item  ELFuzz currently optimises the input-generation stage that seeds AFL++. Maintaining diversity continually throughout the entire mutation campaign (dynamic co-evolution of seeds) is not explored and is a direction for future work.
+    \item On some targets, ELFuzz spends tens of minutes synthesising seeds before the AFL++ phase; while seeds speed up bug discovery thereafter, the up-front cost can matter under tight time budgets.
+    \item \sloppy Results were achieved with a small local 13B parameter model. Larger models or tool-augmented prompting could improve edits, but at higher compute cost.
 \end{itemize}
 
 \subsubsection{Takeaways and implications for our project}
 
 \begin{itemize}
-    \item The concept of "fuzzer space" provides an objective and quantifiable way to improve a set of generators. While this project will be working on seeds directly, using fuzzer space can also allow us to objectively quantify the strength of an input / set of inputs.
+    \item The concept of ``fuzzer space'' provides an objective and quantifiable way to improve a set of generators. While this project will be working on seeds directly, using fuzzer space can also allow us to objectively quantify the strength of an input / set of inputs.
     \item Human-like code edits (splicing, completion, infilling) utilise the capabilities of the LLM to make intelligent and context-aware changes to generators. Again, we can apply this directly to seeds.
-    \item Possible extensions mentioned in the paper that we could implement include: integrating semantic constraints when available (e.g., via constraint solvers or specs), running continuous co‑evolution during the mutation phase, and exploring retrieval or fine‑tuning for low‑resource or proprietary domains.
+    \item Possible extensions mentioned in the paper that we could implement include: integrating semantic constraints when available (e.g., via constraint solvers or specs), running continuous co-evolution during the mutation phase, and exploring retrieval or fine-tuning for low-resource or proprietary domains.
 \end{itemize}
 
 
@@ -196,14 +194,14 @@ Synthesis time is a one‑off pre‑fuzzing cost (hours, varying by SUT), after 
 
 \subsection{Fuzz4All}
 
-Fuzz4All is a universal language fuzzing tool that aims to target a long‑standing pain point in fuzzing: writing SUT‑specific generators and mutation logic are brittle, labour‑intensive, and hard to reuse across languages or fast‑evolving features. Its core insight is to leverage two LLMs and an "autoprompting" stage to produce concise, task‑specific prompts, then run an iterative fuzzing loop that uses examples and natural‑language “generation strategies” to continuously create valid, diverse test programs and inputs for many SUTs and languages, without instrumenting the SUT~\cite{xia_2023_universal}.
+Fuzz4All is a universal language fuzzing tool that aims to target a long-standing pain point in fuzzing: writing SUT-specific generators and mutation logic are brittle, labour-intensive, and hard to reuse across languages or fast-evolving features. Its core insight is to leverage two LLMs and an ``autoprompting'' stage to produce concise, task-specific prompts, then run an iterative fuzzing loop that uses examples and natural-language ``generation strategies'' to continuously create valid, diverse test programs and inputs for many SUTs and languages, without instrumenting the SUT~\cite{xia_2023_universal}.
 
 \subsubsection{How Fuzz4All works}
 
 Fuzz4All makes use of two LLMs, each for a different role:
 
 \begin{itemize}
-    \item The \textbf{Distillation LLM} reduces verbose user inputs (language documentation or specification/examples) into an “input prompt” that succinctly captures what to fuzz and how (e.g., feature summaries, allowed forms, example shapes). In the paper, the authors use GPT-4 as the distillation LLM, as it is a large model tuned for complex instructional prompts. This is called the "autoprompting" phase
+    \item The \textbf{Distillation LLM} reduces verbose user inputs (language documentation or specification/examples) into an ``input prompt'' that succinctly captures what to fuzz and how (e.g., feature summaries, allowed forms, example shapes). In the paper, the authors use GPT-4 as the distillation LLM, as it is a large model tuned for complex instructional prompts. This is called the ``autoprompting'' phase.
     \item The \textbf{Generation LLM} creates fuzzing inputs (programs, expressions, API calls, test cases) from the distilled prompt, combining natural language instructions with code snippets. Here they use the small local LLM StarCoder for generation, to reduce the inference cost associated with querying larger LLMs.
 \end{itemize}
 
@@ -217,16 +215,16 @@ Given user inputs (target docs, feature descriptions, examples), the autoprompti
 Generating candidate prompts is split into two parts:
 
 \begin{itemize}
-    \item First, a “greedy” prompt is used, querying the LLM with a temperature value of 0. This is tuned for obtaining a plausible prompt with high confidence.
+    \item First, a ``greedy'' prompt is used, querying the LLM with a temperature value of 0. This is tuned for obtaining a plausible prompt with high confidence.
     \item Then, sample several variants at higher temperature are queried to diversify phrasing / structure while staying faithful to the task.
 \end{itemize}
 
 \lilspace
 \textit{Scoring:}
 
-Each candidate prompt is used to drive a short generation run, and a scoring function evaluates the prompt by the validity of its produced code with respect to the SUT’s acceptance predicate (e.g., “does the compiler accept this program?”). This is chosen as opposed to other possible metrics (e.g., coverage, bugs found) as valid inputs are most likely to exercise logic deep within the SUT, instead of just the frontend / input parsing phase.
+Each candidate prompt is used to drive a short generation run, and a scoring function evaluates the prompt by the validity of its produced code with respect to the SUT's acceptance predicate (e.g., ``does the compiler accept this program?''). This is chosen as opposed to other possible metrics (e.g., coverage, bugs found) as valid inputs are most likely to exercise logic deep within the SUT, instead of just the frontend / input parsing phase.
 
-Let $p$ be a prompt, $\mathcal{M_G}$ be the generation LLM, $c$ be a code snippet, and isValid be a function that returns 1 if the code snippet is valid with respect to the SUT The scoring function is defined as: 
+Let $p$ be a prompt, $\mathcal{M_G}$ be the generation LLM, $c$ be a code snippet, and isValid be a function that returns 1 if the code snippet is valid with respect to the SUT. The scoring function is defined as:
 \[
 \text{score}(p) \;= \sum_{c \in \mathcal{M_G}(p)} \text{isValid}(c,\text{SUT})
 \]
@@ -235,70 +233,70 @@ The prompt with the highest score is chosen to pass on the fuzzing loop stage.
 
 \subsubsection{Fuzzing loop (generation stage)}
 
-Fuzz4All’s loop iteratively updates the prompt and generates new inputs using three generation strategies, while a user‑defined oracle flags bugs/crashes. A rolling "example" is stored in between iterations, and is updated using the generation LLM with one of the following strategies:
+Fuzz4All's loop iteratively updates the prompt and generates new inputs using three generation strategies, while a user-defined oracle flags bugs/crashes. A rolling ``example'' is stored in between iterations, and is updated using the generation LLM with one of the following strategies:
 
 \begin{itemize}
-    \item \textbf{Generate‑new}: instructs the model to create a fresh input from the distilled prompt alone.
-    \item \textbf{Mutate‑existing}: asks the model to modify the current example (mimicking mutation fuzzers), e.g., swap types, add computations, reorder constructs.
-    \item \textbf{Semantic‑equiv}: prompts the model to produce an input semantically equivalent to the example but syntactically different (useful for compilers and SMT where form changes trigger new internal paths).
+    \item \textbf{Generate-new}: instructs the model to create a fresh input from the distilled prompt alone.
+    \item \textbf{Mutate-existing}: asks the model to modify the current example (mimicking mutation fuzzers), e.g., swap types, add computations, reorder constructs.
+    \item \textbf{Semantic-equiv}: prompts the model to produce an input semantically equivalent to the example but syntactically different (useful for compilers and SMT where form changes trigger new internal paths).
 \end{itemize}
 
 At each iteration, Fuzz4All selects a valid input from the batch as the new example and randomly chooses one of the three strategies, concatenates the distilled prompt + example + strategy text, and queries the generation LLM to produce a new batch of inputs.
 
-Each batch is passed to the SUT and a user‑defined oracle detects “interesting” behaviours (e.g., crashes, assertion failures, differential mismatches). The loop continues until the time budget expires, returning the set of detected bugs.
+Each batch is passed to the SUT and a user-defined oracle detects ``interesting'' behaviours (e.g., crashes, assertion failures, differential mismatches). The loop continues until the time budget expires, returning the set of detected bugs.
 
 \subsubsection{Generation modes: general vs targeted fuzzing}
 
 Fuzz4All supports two different modes of execution, based on the original user inputs provided:
 
 \begin{itemize}
-    \item General fuzzing: The distilled prompt summarizes the overall input language (e.g., GCC C docs, CVC5 SMT‑LIB overview). The loop explores broadly, maintaining diversity by alternating strategies and continuously refreshing the example.
+    \item General fuzzing: The distilled prompt summarises the overall input language (e.g., GCC C docs, CVC5 SMT-LIB overview). The loop explores broadly, maintaining diversity by alternating strategies and continuously refreshing the example.
 
-    \item Targeted fuzzing: The distilled prompt focuses on a specific feature (e.g., C keywords typedef/union, C++ std::expected, Go atomic/built‑in libraries, Java keywords such as instanceof/synchronized/finally). This improves the “hit rate” on the target feature while still discovering off‑target behaviors.
+    \item Targeted fuzzing: The distilled prompt focuses on a specific feature (e.g., C keywords typedef/union, C++ std::expected, Go atomic/built-in libraries, Java keywords such as instanceof/synchronized/finally). This improves the ``hit rate'' on the target feature while still discovering off-target behaviours.
 \end{itemize}
 
 \subsubsection{Benchmarks and reported results}
 
-Across six input languages (C, C++, SMT, Go, Java, Python) and nine SUTs (e.g., GCC/Clang, CVC5/Z3, Go toolchain, OpenJDK javac, Qiskit), Fuzz4All shows consistent advantages over SUT‑specific baselines.
+Across six input languages (C, C++, SMT, Go, Java, Python) and nine SUTs (e.g., GCC/Clang, CVC5/Z3, Go toolchain, OpenJDK javac, Qiskit), Fuzz4All shows consistent advantages over SUT-specific baselines.
 
 \lilspace
 \textit{Coverage over 24 hours:}
 
-Fuzz4All achieves the highest end‑of‑run coverage on all studied targets, with an average improvement of 36.8\% versus the best baseline. Per‑target improvements include, +18.8\% on g++ (vs. YARPGen), +24.9\% on CVC5 (vs. TypeFuzz), +13.7\% on Go (vs. go‑fuzz), and +60.9\% on Java (vs. Hephaestus). Fuzz4All avoids early plateaus by iteratively updating the prompt with examples and alternating strategies, sustaining discovery late into campaigns.
+Fuzz4All achieves the highest end-of-run coverage on all studied targets, with an average improvement of 36.8\% versus the best baseline. Per-target improvements include, +18.8\% on g++ (vs. YARPGen), +24.9\% on CVC5 (vs. TypeFuzz), +13.7\% on Go (vs. go-fuzz), and +60.9\% on Java (vs. Hephaestus). Fuzz4All avoids early plateaus by iteratively updating the prompt with examples and alternating strategies, sustaining discovery late into campaigns.
 
 \lilspace
 \textit{Validity and volume:}
 
 \sloppy
-Fuzz4All often produces more diverse inputs but with lower average validity than strongly SUT‑specific generators. Even with reduced validity, the net number of valid inputs and coverage gains are higher due to LLM breadth and loop diversity; GPU inference is the dominant bottleneck.
+Fuzz4All often produces more diverse inputs but with lower average validity than strongly SUT-specific generators. Even with reduced validity, the net number of valid inputs and coverage gains are higher due to LLM breadth and loop diversity; GPU inference is the dominant bottleneck.
 
 \lilspace
 \textit{Targeted fuzzing effectiveness:}
 
-Fuzz4All achieves an average feature hit rate of around 83.0\% across targeted campaigns. Targeted prompting yields significant increases in reaching specific features compared to general campaigns, with manageable cross‑feature hits (sometimes beneficial for discovery).
+Fuzz4All achieves an average feature hit rate of around 83.0\% across targeted campaigns. Targeted prompting yields significant increases in reaching specific features compared to general campaigns, with manageable cross-feature hits (sometimes beneficial for discovery).
 
 \lilspace
 \textit{Bug finding ability:}
 
-98 bugs were reported across studied SUTs, with 64 confirmed by developers as previously unknown. Examples include internal compiler errors in GCC triggered by nuanced feature combinations (e.g., noexcept + std::optional), segmentation faults in Clang, and crashes in Qiskit due to invalid circuit constructs unlikely to be explored by template‑based generators.
+98 bugs were reported across studied SUTs, with 64 confirmed by developers as previously unknown. Examples include internal compiler errors in GCC triggered by nuanced feature combinations (e.g., noexcept + std::optional), segmentation faults in Clang, and crashes in Qiskit due to invalid circuit constructs unlikely to be explored by template-based generators.
 
 \subsubsection{Limitations mentioned in the paper}
 
 \begin{itemize}
     \item More general prompts for strict languages (e.g., Go with static checks; SMT with tight theory constraints) can yield lower validity, requiring heavier filtering and oracle work. Fuzz4All still improves coverage, but wastes more SUT cycles on invalid inputs.
 
-    \item The generation LLM (StarCoder in the study) is inference‑bound, and fuzzing campaigns are bottlenecked by GPU resources, limiting throughput. Also, the autoprompting overhead (on average \~3 minutes per campaign) is modest, but adds baseline time.
+    \item The generation LLM (StarCoder in the study) is inference-bound, and fuzzing campaigns are bottlenecked by GPU resources, limiting throughput. Also, the autoprompting overhead (on average $\sim$3 minutes per campaign) is modest, but adds baseline time.
 
-    \item Autoprompting relies on model priors over recent docs / examples. If documentation is very new, obscure, or under‑represented (e.g., emergent quantum APIs), distillation and generation can miss edge cases or “hallucinate” constraints, reducing validity and targeted hit rates.
+    \item Autoprompting relies on model priors over recent docs / examples. If documentation is very new, obscure, or under-represented (e.g., emergent quantum APIs), distillation and generation can miss edge cases or ``hallucinate'' constraints, reducing validity and targeted hit rates.
 
-    \item Fuzz4All intentionally avoids instrumenting SUTs. While this helps practicality and portability, it limits access to fine‑grained internal signals (e.g., coverage edges, value profiling) that grey-box mutation fuzzers exploit to accelerate deep exploration. The method compensates by prompt updates and strategy alternation, but some hard‑to‑reach behaviours may still benefit from hybridization with feedback‑guided loops.
+    \item Fuzz4All intentionally avoids instrumenting SUTs. While this helps practicality and portability, it limits access to fine-grained internal signals (e.g., coverage edges, value profiling) that grey-box mutation fuzzers exploit to accelerate deep exploration. The method compensates by prompt updates and strategy alternation, but some hard-to-reach behaviours may still benefit from hybridisation with feedback-guided loops.
 
 \end{itemize}
 
 \subsubsection{Takeaways and implications for our project}
 
 \begin{itemize}
-    \item Fuzz4All’s two-LLM pipeline (distillation + generation) enables practical, universal fuzzing across languages and SUTs without bespoke grammars or instrumentation, and makes best use of each LLM's strength / cost trade-off effectively. A multi-LLM approach could be applied in our seed generation project. 
+    \item Fuzz4All's two-LLM pipeline (distillation + generation) enables practical, universal fuzzing across languages and SUTs without bespoke grammars or instrumentation, and makes best use of each LLM's strength / cost trade-off effectively. A multi-LLM approach could be applied in our seed generation project. 
     \item The fuzzing loop is a prompt-conditioned search: distil, generate, validate, then update the prompt with examples while rotating strategies to sustain diversity. This strategy of prompt and input evolution has proven effective, and we can use this as well.
     \item Possible improvements that Fuzz4All were not able to implement include: pairing prompt evolution with coverage information to further deepen SUT exploration.
 \end{itemize}
@@ -317,11 +315,11 @@ LMFuzz is a universal, code-generating fuzzer that tackles a key weakness of pri
 
 LMFuzz begins with a small set of prompt candidates $P_i$ - the textual instruction given to the generation LLM that conditions what kind of code to produce for the SUT. For each prompt $P_i$, the generation LLM produces a batch of 30 programmes (code samples) $x_{i,1},\dots,x_{i,30}$. Each programme is then executed against the SUT.
 
-Let $\text{program\_return}(x_{i,j})$ denote the SUT’s exit status when executing programme $x_{i,j}$. The prompt’s score is the number of programmes in its batch that run successfully (exit code 0):
+Let $\text{program\_return}(x_{i,j})$ denote the SUT's exit status when executing programme $x_{i,j}$. The prompt's score is the number of programmes in its batch that run successfully (exit code 0):
 \[
 \text{Score}(P_i) \;=\; \sum_{j=1}^{30} \big(\text{program\_return}(x_{i,j}) = 0\big)
 \]
-LMFuzz selects the prompt with the highest $\text{Score}(P_i)$ to seed the fuzzing loop; ties are broken by the prompts’ identifier order (smallest identifier wins).
+LMFuzz selects the prompt with the highest $\text{Score}(P_i)$ to seed the fuzzing loop; ties are broken by the prompts' identifier order (smallest identifier wins).
 
 \lilspace
 \textit{Fuzzing loop:}
@@ -329,14 +327,14 @@ LMFuzz selects the prompt with the highest $\text{Score}(P_i)$ to seed the fuzzi
 On each iteration of the fuzzing loop, LMFuzz executes the following steps:
 
 \begin{itemize}
-    \item Generate code with the “generative LLM” (StarCoder-1B in the study) from the current prompt.
+    \item Generate code with the ``generative LLM'' (StarCoder-1B in the study) from the current prompt.
     \item Execute the code; if errors occur, invoke the program-repair loop.
     \item Select a mutation operator via Thompson Sampling (see below) and mutate the prompt using operator-specific instructions.
     \item Save generated code and update the prompt for the next iteration.
 \end{itemize}
 
 \lilspace
-\textit{Generation operators (three “arms”):}
+\textit{Generation operators (three ``arms''):}
 
 \begin{itemize}
     \item \textbf{Generate}: ask the LLM to produce a new program from the current prompt (diversity-first).
@@ -346,7 +344,7 @@ On each iteration of the fuzzing loop, LMFuzz executes the following steps:
 
 \subsubsection{Operator selection via Thompson Sampling}
 
-LMFuzz treats operator choice (Generate/Mutate/Semantics) as a multi-armed bandit problem. For each operator, it tracks successes and failures (e.g., “compiled and ran without error” vs. not) and samples a score from a Beta posterior:
+LMFuzz treats operator choice (Generate/Mutate/Semantics) as a multi-armed bandit problem. For each operator, it tracks successes and failures (e.g., ``compiled and ran without error'' vs. not) and samples a score from a Beta posterior:
 
 Arm $k$ maintains counts $\alpha_k$ (successes) and $\beta_k$ (failures) and draws
 \[
@@ -356,7 +354,7 @@ The operator with maximal sampled $\theta_k$ is selected for the next iteration,
 
 \subsubsection{Program-repair loop (LLM-based error correction)}
 
-Generated programs frequently include basic issues (missing headers/imports, syntax errors, incorrect API usage). LMFuzz addresses this with a second “correction LLM” (DeepSeek‑Coder‑6.7B in the study) If the program fails, LMFuzz creates a “code+error” pair by concatenating the original source with compiler/runtime error messages and feeds it to the correction model.
+Generated programs frequently include basic issues (missing headers/imports, syntax errors, incorrect API usage). LMFuzz addresses this with a second ``correction LLM'' (DeepSeek-Coder-6.7B in the study). If the program fails, LMFuzz creates a ``code+error'' pair by concatenating the original source with compiler/runtime error messages and feeds it to the correction model.
 
 The correction output replaces the program when valid; otherwise, LMFuzz can perform an additional repair cycle (the study evaluates 0/1/2 cycles). One repair cycle typically yields the best trade-off between validity gains and overall coverage (too many repair cycles reduce throughput and program diversity).
 
@@ -365,20 +363,20 @@ The correction output replaces the program when valid; otherwise, LMFuzz can per
 \lilspace
 \textit{Coverage versus baselines:}
 
-Across GCC, G++, CVC5, Go, and Qiskit, LMFuzz achieved higher or competitive line coverage than both traditional fuzzers (e.g., GrayC, Csmith, TypeFuzz, go‑fuzz, MorphQ) and Fuzz4All. Examples from Table 3:
+Across GCC, G++, CVC5, Go, and Qiskit, LMFuzz achieved higher or competitive line coverage than both traditional fuzzers (e.g., GrayC, Csmith, TypeFuzz, go-fuzz, MorphQ) and Fuzz4All. Examples from Table 3:
 
 \begin{itemize}
     \item GCC: LMFuzz 199,595 lines, coverage rate 16.57\% (higher than GrayC 13.90\% and Csmith 9.27\%).
     \item G++: LMFuzz 223,129 lines, 19.08\% (higher than YARPGen 14.25\%).
     \item CVC5: 48,713 lines, 9.12\% (higher than TypeFuzz 8.64\%).
-    \item Go: 38,024 lines, 12.03\% (higher than go‑fuzz 11.32\%).
+    \item Go: 38,024 lines, 12.03\% (higher than go-fuzz 11.32\%).
     \item Qiskit: 31,565 lines, 19.63\% (slightly higher than Fuzz4All 19.45\%, competitive with MorphQ 20.39\%).
 \end{itemize}
 
 \lilspace
 \textit{Validity of generated code}
 
-LMFuzz’s code validity is roughly twice that of Fuzz4All across five projects (e.g., C/C++ validity in the 60–70\% range for LMFuzz vs. ~30–37\% for Fuzz4All), though still below specialized, traditional generators with strict grammars.
+LMFuzz's code validity is roughly twice that of Fuzz4All across five projects (e.g., C/C++ validity in the 60-70\% range for LMFuzz vs. $\sim$30-37\% for Fuzz4All), though still below specialised, traditional generators with strict grammars.
 
 \lilspace
 \textit{Bug finding ability:}
@@ -401,11 +399,11 @@ LMFuzz’s code validity is roughly twice that of Fuzz4All across five projects 
     
     \item Performance depends on initial prompt quality and model priors; the scoring function helps, but prompts that omit critical headers/imports or feature details degrade validity (Chapter 4.2.3). Updates to foundation models pose external validity threats.
     
-    \item The approach is inference‑bound; per‑iteration generation and repair consume GPU time, limiting the total number of programs explored under fixed budgets.
+    \item The approach is inference-bound; per-iteration generation and repair consume GPU time, limiting the total number of programs explored under fixed budgets.
     
-    \item Evaluation uses line coverage (via project tools or repository line counts). Without grey-box instrumentation (e.g., edge/branch/value profiling), some deep behaviours may remain under‑explored compared to feedback‑guided mutation fuzzers.
+    \item Evaluation uses line coverage (via project tools or repository line counts). Without grey-box instrumentation (e.g., edge/branch/value profiling), some deep behaviours may remain under-explored compared to feedback-guided mutation fuzzers.
     
-    \item The TS bandit selects among three operators. Extending to richer operator families (grammar‑aware rewrites, API‑sequence planners) may improve generality but complicates posterior credit assignment and sampling dynamics.
+    \item The TS bandit selects among three operators. Extending to richer operator families (grammar-aware rewrites, API-sequence planners) may improve generality but complicates posterior credit assignment and sampling dynamics.
 \end{itemize}
 
 \subsubsection{Takeaways and implications for our project:}
@@ -413,7 +411,7 @@ LMFuzz’s code validity is roughly twice that of Fuzz4All across five projects 
 \begin{itemize}
     \item Modelling operator choice as a bandit with Thompson Sampling gives a principled and effective way to steer LLM generation toward valid, high-coverage programs under uncertainty \cite{lin_2025_lmfuzz,thompson_1933_on}.
     
-    \item A lightweight, in‑loop program‑repair mechanism materially boosts validity and practical bug-finding without hand-built grammars.
+    \item A lightweight, in-loop program-repair mechanism materially boosts validity and practical bug-finding without hand-built grammars.
     
-    \item For new LLM fuzzers, combining adaptive operator selection, prompt-quality scoring, and on‑the‑fly repair appears crucial to escape the low‑validity trap while retaining diversity; hybridizing with selective feedback signals (e.g., simple coverage counters) could further deepen exploration.
+    \item For new LLM fuzzers, combining adaptive operator selection, prompt-quality scoring, and on-the-fly repair appears crucial to escape the low-validity trap while retaining diversity; hybridising with selective feedback signals (e.g., simple coverage counters) could further deepen exploration.
 \end{itemize}
